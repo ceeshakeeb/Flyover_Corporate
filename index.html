@@ -264,6 +264,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-sy
 }
 
 
+/* ── pending payments ── */
+.pend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.pend-top{display:flex;align-items:center;gap:10px}
+.pend-amt{font-size:18px;font-weight:700;color:var(--amber)}
+.pend-txt{font-size:13px;font-weight:600;color:var(--text)}
+.pend-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.pend-actions{display:flex;gap:8px;margin-top:10px}
+.btn-sm{padding:9px 12px;font-size:13px;border-radius:8px;width:auto;flex:1}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.pend-ok{display:flex;align-items:center;gap:8px;background:var(--green-light);color:var(--green);border-radius:var(--radius-lg);padding:11px 12px;font-size:13px;font-weight:600}
+.pay-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer}
+.pay-chip.pend{background:var(--amber-light);color:var(--amber)}
+.pay-chip.done{background:var(--green-light);color:var(--green)}
+.pay-row{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+.pay-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.pay-left{color:var(--amber);white-space:nowrap}
+.pay-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.pay-act{display:flex;gap:8px;align-items:center;margin-top:8px}
+.pay-act .split-input{flex:1;width:auto;text-align:left}
+.pay-act .btn-sm{flex:0 0 auto;padding:9px 18px}
+.pay-log{font-size:11px;color:var(--text3);margin-top:6px}
+.pay-done{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
 /* ── theme switch ── */
 .theme-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px}
 .theme-opt{padding:9px 4px;text-align:center;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--text2);border:none;background:none}
@@ -478,9 +500,9 @@ function nowISO(){return new Date().toISOString();}
 // ═══════════════════════════════════════════════
 let auth=null,db=null,FV=null;
 let U=null;                                   // signed-in user {uid,name,email}
-let S={books:[],currentBookId:null,transactions:[]};   // cloud data (books = all mine, transactions = current book only)
+let S={books:[],currentBookId:null,transactions:[],payments:[]};   // cloud data (books = all mine, transactions = current book only)
 let V={month:today().slice(0,7),year:null,page:'dashboard',txnTab:'entries',catFilter:'all'};
-let unsubBooks=null,unsubTxns=null,txnsBookId=null;
+let unsubBooks=null,unsubTxns=null,unsubPays=null,txnsBookId=null;
 let booksLoaded=false,bootstrapping=false,pendingSelect=null,registerName='';
 const sync={books:false,txns:false};
 
@@ -492,6 +514,7 @@ function isShared(b){return !!b&&b.memberIds.length>1;}
 function roleLabel(r){return r==='owner'?'👑 Owner':r==='editor'?'✏️ Editor':'👁 Viewer';}
 const bookRef=id=>db.collection('books').doc(id);
 const txCol=id=>bookRef(id).collection('txns');
+const payCol=id=>bookRef(id).collection('payments');
 
 function dbErr(e){
   console.error(e);
@@ -567,7 +590,7 @@ function onSignedIn(user){
   if(U&&U.uid===user.uid)return;
   teardown();
   U={uid:user.uid,name:user.displayName||registerName||(user.email||'').split('@')[0]||'User',email:user.email||''};
-  S={books:[],currentBookId:null,transactions:[]};
+  S={books:[],currentBookId:null,transactions:[],payments:[]};
   booksLoaded=false;V.page='dashboard';V.catFilter='all';V.txnTab='entries';
   showScreen('mainScreen');
   showPage('dashboard');
@@ -585,7 +608,7 @@ function syncEmailIndex(){
 }
 function onSignedOut(){
   teardown();U=null;registerName='';
-  S={books:[],currentBookId:null,transactions:[]};
+  S={books:[],currentBookId:null,transactions:[],payments:[]};
   closeSheetNow();
   $('fPassword').value='';
   showScreen('authScreen');
@@ -593,6 +616,7 @@ function onSignedOut(){
 function teardown(){
   if(unsubBooks){unsubBooks();unsubBooks=null;}
   if(unsubTxns){unsubTxns();unsubTxns=null;}
+  if(unsubPays){unsubPays();unsubPays=null;}
   txnsBookId=null;bootstrapping=false;pendingSelect=null;sync.books=sync.txns=false;
 }
 
@@ -642,8 +666,13 @@ function handleBooksSnap(snap){
 function attachTxns(bookId){
   if(txnsBookId===bookId&&unsubTxns)return;
   if(unsubTxns){unsubTxns();unsubTxns=null;}
-  txnsBookId=bookId;S.transactions=[];sync.txns=false;
+  if(unsubPays){unsubPays();unsubPays=null;}
+  txnsBookId=bookId;S.transactions=[];S.payments=[];sync.txns=false;
   if(!bookId)return;
+  unsubPays=payCol(bookId).onSnapshot(snap=>{
+    S.payments=snap.docs.map(d=>cleanPay(d.id,d.data())).filter(Boolean);
+    renderAll();if(_paySheet&&$('sheetBg').classList.contains('open'))renderPaySheet();
+  },dbErr);
   unsubTxns=txCol(bookId).onSnapshot(snap=>{
     sync.txns=snap.metadata.hasPendingWrites;
     S.transactions=snap.docs.map(d=>cleanTxn(d.id,bookId,d.data())).filter(Boolean);
@@ -836,6 +865,8 @@ async function confirmDeleteBook(id){
     const ids=id===S.currentBookId?S.transactions.map(t=>t.id):(await txCol(id).get()).docs.map(d=>d.id);
     // Queued writes are applied in order: entries first (rules need the book to exist), then the book itself
     runChunks(ids,(bt,tid)=>bt.delete(txCol(id).doc(tid))).catch(dbErr);
+    const pids=(await payCol(id).get()).docs.map(d=>d.id);
+    runChunks(pids,(bt,pid)=>bt.delete(payCol(id).doc(pid))).catch(dbErr);
     bookRef(id).delete().catch(dbErr);
     toast('Book deleted');
   }catch(e){dbErr(e);}
@@ -981,6 +1012,90 @@ function splitLine(t){
   const parts=Object.keys(t.splits).filter(u=>b.members[u]).map(u=>esc((b.members[u].name||b.members[u].email||'?').split(' ')[0])+' '+fmt(t.splits[u]));
   return parts.length?`<div style="font-size:10px;color:var(--text3);margin-top:1px">Split: ${parts.join(' · ')}</div>`:'';
 }
+// ── PAYMENTS LEDGER ──
+// Whoever enters an expense (X) pays for everyone. Each other member's share is "to pay" until X records what they paid.
+// Only X can record it (rules enforce to == signed-in user); the balance is always total shares minus payments recorded.
+const r2=x=>Math.round(x*100)/100;
+function fn(uid){const b=currentBook(),m=b&&b.members[uid];return ((m&&(m.name||m.email))||'Member').split(' ')[0];}
+function payLine(c,d){return c===U.uid?'To receive from '+fn(d):d===U.uid?'To pay '+fn(c):fn(d)+' to pay '+fn(c);}
+function cleanPay(id,p){
+  if(!p||typeof p!=='object'||typeof p.from!=='string'||typeof p.to!=='string')return null;
+  const a=Number(p.amount);if(!Number.isFinite(a)||a<=0)return null;
+  return{id,from:p.from,to:p.to,amount:a,date:String(p.date||'').slice(0,10),createdAt:String(p.createdAt||'')};
+}
+// one row per (creditor c → debtor d): due = d's shares on c's expenses, paid = payments c has recorded from d
+function ledger(){
+  const b=currentBook();if(!b)return [];
+  const map={};
+  const row=(c,d)=>map[c+'|'+d]||(map[c+'|'+d]={c,d,due:0,paid:0});
+  S.transactions.forEach(t=>{
+    if(t.type!=='expense'||!t.splits||!b.members[t.createdBy])return;
+    Object.keys(t.splits).forEach(u=>{if(u!==t.createdBy&&b.members[u]&&t.splits[u]>0)row(t.createdBy,u).due+=t.splits[u];});
+  });
+  S.payments.forEach(p=>{if(b.members[p.from]&&b.members[p.to])row(p.to,p.from).paid+=p.amount;});
+  return Object.values(map).map(o=>({c:o.c,d:o.d,due:r2(o.due),paid:r2(o.paid),bal:r2(o.due-o.paid)}));
+}
+function renderPending(){
+  const b=currentBook();if(!b||!isShared(b))return '';
+  const rows=ledger().filter(o=>o.due>0.004);
+  const head='<div class="section" style="padding-bottom:0"><div class="section-hdr"><div class="section-title">Payments</div></div>';
+  if(!rows.length)return head+'<div class="pend-ok">✓ Nothing to pay or receive</div></div>';
+  rows.sort((x,y)=>((y.c===U.uid||y.d===U.uid)-(x.c===U.uid||x.d===U.uid))||y.bal-x.bal);
+  return head+rows.map(o=>{
+    const other=o.c===U.uid?o.d:o.c,done=o.bal<=0.004,recv=o.c===U.uid,pct=o.due>0?Math.min(100,Math.round(o.paid/o.due*100)):0;
+    const col=done||recv?'var(--green)':'var(--amber)';
+    return `<div class="pend-card"><div class="pend-top"><div class="member-avatar">${esc(initials(fn(other)))}</div>
+      <div style="flex:1;min-width:0"><div class="pend-txt">${done?'Settled with '+esc(fn(other)):esc(payLine(o.c,o.d))}</div>
+      <div class="pend-sub">Total ${fmt(o.due)} · ${recv?'Received':'Paid'} ${fmt(o.paid)}</div></div>
+      <div class="pend-amt" style="color:${col}">${fmt(Math.max(0,o.bal))}</div></div>
+      <div class="mem-bar" style="margin-top:8px"><div style="width:${pct}%;background:var(--green)"></div></div>
+      <div class="pend-actions"><button class="btn btn-ghost btn-sm" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d)">History</button>
+      ${recv&&canEdit(b)?`<button class="btn btn-primary btn-sm" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d)">${done?'Add payment':'Enter amount received'}</button>`:''}</div></div>`;
+  }).join('')+'</div>';
+}
+let _paySheet=null;
+function openPaySheet(c,d){_paySheet={c,d};openSheet();renderPaySheet();}
+function renderPaySheet(){
+  const P=_paySheet,b=currentBook();if(!P||!b||!$('sheetInner'))return;
+  const keep=$('payAmt')?$('payAmt').value:'',keepDate=$('payDate')?$('payDate').value:'';
+  const o=ledger().find(x=>x.c===P.c&&x.d===P.d)||{c:P.c,d:P.d,due:0,paid:0,bal:0};
+  const isX=(P.c===U.uid)&&canEdit(b),recv=P.c===U.uid;
+  const hist=S.payments.filter(p=>p.from===P.d&&p.to===P.c).sort((x,y)=>y.date.localeCompare(x.date)||y.createdAt.localeCompare(x.createdAt));
+  const form=isX?`<div class="form-group"><label class="form-label">${esc(fn(P.d))} paid (₹)</label>
+      <input class="form-input" id="payAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" oninput="payPreview()" value="${esc(keep)}"/>
+      <div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pay-sub" id="payNote"></span>${o.bal>0.004?`<button class="split-reset" onclick="payFull()">Full balance ${fmt(o.bal)}</button>`:''}</div></div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="payDate" type="date" value="${esc(keepDate||today())}"/></div>
+    <button class="btn btn-primary" onclick="savePayment()" style="margin-bottom:14px">Save payment</button>`:'';
+  const rows=hist.length?hist.map(p=>`<div class="pay-row" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div class="pay-top"><span>${recv?'Received':'Paid'} ${fmt(p.amount)}</span></div><div class="pay-sub">${esc(p.date)}</div></div>
+      ${p.to===U.uid?`<button class="close-btn" data-id="${esc(p.id)}" onclick="deletePayment(this.dataset.id)" title="Delete">×</button>`:''}</div>`).join(''):'<div class="pay-sub" style="margin-bottom:6px">No payments recorded yet</div>';
+  $('sheetInner').innerHTML=`<div class="sheet-title">${esc(payLine(P.c,P.d))}<button class="close-btn" onclick="closeSheetNow()">×</button></div>
+    <div class="pend-card" style="margin-bottom:14px"><div class="pend-top"><div style="flex:1"><div class="pend-txt">${o.bal<=0.004?'Settled':esc(recv?'Balance to receive':(P.d===U.uid?'Balance to pay':'Balance'))}</div>
+      <div class="pend-sub">Total ${fmt(o.due)} · ${recv?'Received':'Paid'} ${fmt(o.paid)}</div></div><div class="pend-amt" style="color:${o.bal<=0.004||recv?'var(--green)':'var(--amber)'}">${fmt(Math.max(0,o.bal))}</div></div></div>
+    ${form}<div class="section-title" style="margin-bottom:8px">Payment history</div>${rows}`;
+  if(isX)payPreview();
+}
+function payBalance(){const P=_paySheet,o=ledger().find(x=>x.c===P.c&&x.d===P.d);return o?o.bal:0;}
+function payFull(){$('payAmt').value=payBalance();payPreview();}
+function payPreview(){
+  const n=$('payNote');if(!n)return;
+  const amt=parseFloat($('payAmt').value),bal=payBalance();
+  if(!amt){n.className='pay-sub';n.textContent='Balance now '+fmt(bal);return;}
+  if(amt>bal+0.004){n.className='pay-sub';n.style.color='var(--red)';n.textContent='More than the balance '+fmt(bal);return;}
+  n.style.color='';n.className='pay-sub';n.textContent='Balance after this: '+fmt(r2(bal-amt));
+}
+function savePayment(){
+  const b=currentBook(),P=_paySheet;if(!b||!P||!canEdit(b)||P.c!==U.uid){toast('Only '+(P?fn(P.c):'the payer')+' can record this');return;}
+  const amt=r2(parseFloat($('payAmt').value)),date=$('payDate').value,bal=payBalance();
+  if(!amt||amt<=0){toast('Enter the amount paid');return;}
+  if(amt>bal+0.004){toast('That is more than the balance '+fmt(bal));return;}
+  if(!date){toast('Pick a date');return;}
+  payCol(b.id).doc().set({from:P.d,to:P.c,amount:amt,date,createdAt:nowISO()}).catch(dbErr);
+  $('payAmt').value='';toast('Payment recorded ✓');
+}
+function deletePayment(id){
+  const b=currentBook();if(!b||!confirm('Delete this payment? The balance will go back up.'))return;
+  payCol(b.id).doc(id).delete().catch(dbErr);toast('Payment deleted');
+}
 function memberList(b){
   return Object.entries(b.members).sort((x,y)=>(x[1].role==='owner'?0:1)-(y[1].role==='owner'?0:1)).map(([uid,m])=>({uid,name:m.name||m.email||'Member'}));
 }
@@ -993,21 +1108,23 @@ function equalShares(total,uids){
 // expense per member for a list of txns (entries without a saved split are shared equally among current members)
 function memberExpense(b,txns){
   const list=memberList(b),uids=list.map(m=>m.uid),tot={};
-  uids.forEach(u=>tot[u]=0);let other=0;
+  const paid={};uids.forEach(u=>{tot[u]=0;paid[u]=0;});let other=0;
   txns.filter(t=>t.type==='expense').forEach(t=>{
+    if(t.createdBy in paid)paid[t.createdBy]+=t.amount;
     const sp=t.splits||equalShares(t.amount,uids);
     Object.keys(sp).forEach(u=>{if(u in tot)tot[u]+=sp[u];else other+=sp[u];});
   });
-  return{list,tot,other};
+  return{list,tot,other,paid};
 }
 function renderMemberExpense(txns,exp){
   const b=currentBook();
   if(!b||!isShared(b))return '';
-  const {list,tot,other}=memberExpense(b,txns);
+  const {list,tot,other,paid}=memberExpense(b,txns);
   const cards=list.map(m=>{
     const v=tot[m.uid],pct=exp>0?Math.round(v/exp*100):0;
     return `<div class="mem-card"><div class="member-avatar">${esc(initials(m.name))}</div>
       <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="member-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name)}${m.uid===U.uid?' (you)':''}</span><span style="font-weight:700;color:var(--red)">${fmt(v)}</span></div>
+      <div class="pend-sub">Share of expense · Paid out ${fmt(paid[m.uid])}</div>
       <div class="mem-bar"><div style="width:${pct}%"></div></div></div></div>`;
   }).join('');
   const oth=other>0.004?`<div class="mem-card"><div class="member-avatar">?</div><div style="flex:1;font-size:13px">Former members</div><span style="font-weight:700;color:var(--red)">${fmt(other)}</span></div>`:'';
@@ -1040,6 +1157,7 @@ function renderDashboard(){
     <div class="s-card"><div class="s-label">Expense</div><div class="s-val expense">${fmt(exp)}</div></div>
     <div class="s-card balance-card"><div class="s-label">Balance — ${periodLabel()}</div><div class="s-val ${bal>=0?'':'negative'}">${fmtSgn(bal)}</div></div></div>
     ${renderMemberExpense(txns,exp)}
+    ${renderPending()}
     ${Object.keys(catMap).length?`<div class="section"><div class="section-hdr"><div class="section-title">Expense Breakdown</div></div>
       <div style="position:relative;height:280px;display:flex;justify-content:center;align-items:center"><canvas id="expenseChart"></canvas>
       <div style="position:absolute;text-align:center;pointer-events:none"><div style="font-size:12px;color:var(--text2)">Total Expense</div><div style="font-size:20px;font-weight:700">${fmt(exp)}</div></div></div></div>`:''}
@@ -1294,7 +1412,7 @@ function renderSplitBox(){
   const box=$('splitBox');if(!box)return;
   if(!splitActive()){box.innerHTML='';return;}
   const b=currentBook();
-  box.innerHTML=`<div class="split-box"><div class="split-hdr"><span class="split-title">Split between members</span><button class="split-reset" onclick="resetSplit()">Reset to equal</button></div>
+  box.innerHTML=`<div class="split-box"><div class="split-hdr"><span class="split-title">Split · you paid, others will pay you their share</span><button class="split-reset" onclick="resetSplit()">Reset to equal</button></div>
     ${memberList(b).map(m=>`<div class="split-row"><span class="split-name">${esc(m.name)}${m.uid===U.uid?' (you)':''}</span><span class="split-pct" data-u="${esc(m.uid)}"></span>
       <input class="split-input ${_split.manual[m.uid]?'manual':''}" data-u="${esc(m.uid)}" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${esc(_split.vals[m.uid]||'')}" oninput="onSplitInput(this.dataset.u,this)"/></div>`).join('')}
     <div class="split-note" id="splitNote"></div></div>`;
@@ -1375,7 +1493,7 @@ function exportPDF(){
 //  SHEET HELPERS, TOAST, BOOT
 // ═══════════════════════════════════════════════
 function closeSheet(e){if(e.target===e.currentTarget)closeSheetNow();}
-function closeSheetNow(){$('sheetBg').classList.remove('open');if(U&&currentBook()){renderMonthTabs();renderPage();}}
+function closeSheetNow(){_paySheet=null;$('sheetBg').classList.remove('open');if(U&&currentBook()){renderMonthTabs();renderPage();}}
 let _toastTimer;
 function toast(msg,dur=2200){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),dur);}
 
