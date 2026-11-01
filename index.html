@@ -286,6 +286,24 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-sy
 .pay-act .btn-sm{flex:0 0 auto;padding:9px 18px}
 .pay-log{font-size:11px;color:var(--text3);margin-top:6px}
 .pay-done{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
+/* ── split presets + pay button ── */
+.split-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.split-chip{padding:6px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer}
+.split-chip.on{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.split-hint{font-size:11px;color:var(--text2);margin-bottom:6px}
+/* ── + menu (expense / payment) ── */
+.addmenu-bg{position:absolute;inset:0;background:rgba(10,16,36,.45);z-index:44;display:none}
+.addmenu-bg.open{display:block}
+.addmenu{position:absolute;right:16px;bottom:calc(142px + env(safe-area-inset-bottom));z-index:45;display:none;flex-direction:column;gap:10px;align-items:flex-end}
+.addmenu.open{display:flex}
+.am-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 18px 10px 10px;box-shadow:var(--shadow-lg);cursor:pointer;min-width:230px;text-align:left;font-family:inherit}
+.am-item:active{transform:scale(.98)}
+.am-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--blue-light);flex-shrink:0}
+.am-t{font-size:15px;font-weight:700;color:var(--text)}
+.am-s{font-size:12px;color:var(--text2);margin-top:1px}
+.am-s.warn{color:var(--amber);font-weight:700}
+.am-s.good{color:var(--green);font-weight:700}
+.fab.open{transform:rotate(45deg);z-index:46}
 /* ── theme switch ── */
 .theme-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px}
 .theme-opt{padding:9px 4px;text-align:center;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--text2);border:none;background:none}
@@ -413,7 +431,9 @@ window.addEventListener('error',function(e){
     <div class="month-scroll" id="monthScroll"></div>
   </div>
   <div class="page-scroll" id="pageContent"></div>
-  <button class="fab" id="fabBtn" onclick="openTxnSheet(null)">+</button>
+  <div class="addmenu-bg" id="addMenuBg" onclick="closeAddMenu()"></div>
+  <div class="addmenu" id="addMenu"></div>
+  <button class="fab" id="fabBtn" onclick="onFabClick()">+</button>
   <nav class="nav">
     <button class="nav-btn active" id="navDashboard" onclick="showPage('dashboard')"><span class="nav-icon">⊞</span>Dashboard</button>
     <button class="nav-btn" id="navTransactions" onclick="showPage('transactions')"><span class="nav-icon">≡</span>Entries</button>
@@ -760,14 +780,35 @@ function refreshHeader(){
   $('headerBookIcon').textContent=b?b.emoji:'📒';
 }
 function updateFab(){
-  const b=currentBook();
-  $('fabBtn').style.display=(V.page==='categories'||V.page==='profile'||!b||!canEdit(b))?'none':'flex';
+  const b=currentBook(),hide=(V.page==='categories'||V.page==='profile'||!b||!canEdit(b));
+  $('fabBtn').style.display=hide?'none':'flex';
+  if(hide)closeAddMenu();else if($('addMenu').classList.contains('open'))renderAddMenu();
 }
+// + : in a shared book it opens a small menu (Expense / Payment with the amount to pay); in a personal book it adds an entry directly
+function onFabClick(){
+  const b=currentBook();if(!b||!canEdit(b))return;
+  if(!isShared(b)){openTxnSheet(null);return;}
+  if($('addMenu').classList.contains('open')){closeAddMenu();return;}
+  renderAddMenu();$('addMenu').classList.add('open');$('addMenuBg').classList.add('open');$('fabBtn').classList.add('open');
+}
+function closeAddMenu(){
+  const m=$('addMenu');if(!m)return;
+  m.classList.remove('open');$('addMenuBg').classList.remove('open');$('fabBtn').classList.remove('open');
+}
+function renderAddMenu(){
+  const rows=ledger().filter(o=>o.bal>0.004);
+  const pay=rows.filter(o=>o.d===U.uid).reduce((s,o)=>s+o.bal,0),recv=rows.filter(o=>o.c===U.uid).reduce((s,o)=>s+o.bal,0);
+  const parts=[];if(pay>0.004)parts.push(`<span class="am-s warn">To pay ${fmt(pay)}</span>`);if(recv>0.004)parts.push(`<span class="am-s good">To receive ${fmt(recv)}</span>`);
+  $('addMenu').innerHTML=`<button class="am-item" onclick="addMenuPick('pay')"><span class="am-ic">💸</span><span><div class="am-t">Payment</div>
+      <div style="display:flex;flex-direction:column;gap:1px">${parts.length?parts.join(''):'<span class="am-s">Nothing pending</span>'}</div></span></button>
+    <button class="am-item" onclick="addMenuPick('entry')"><span class="am-ic">🧾</span><span><div class="am-t">Expense</div><div class="am-s">or income entry</div></span></button>`;
+}
+function addMenuPick(w){closeAddMenu();if(w==='pay')openPayNow();else openTxnSheet(null);}
 function renderAll(){if(!U)return;refreshHeader();updateFab();renderMonthTabs();renderPage();refreshBooksSheetIfOpen();}
 function refreshBooksSheetIfOpen(){
   if($('sheetBg').classList.contains('open')&&$('sheetInner').querySelector('.book-item'))renderBooksSheet();
 }
-function openSheet(){$('sheetBg').classList.add('open');}
+function openSheet(){closeAddMenu();$('sheetBg').classList.add('open');}
 function openBooksSheet(){openSheet();renderBooksSheet();}
 
 function renderBooksSheet(){
@@ -1009,8 +1050,10 @@ function renderPage(){
 function splitLine(t){
   const b=currentBook();
   if(!b||!isShared(b)||t.type!=='expense'||!t.splits)return '';
-  const parts=Object.keys(t.splits).filter(u=>b.members[u]).map(u=>esc((b.members[u].name||b.members[u].email||'?').split(' ')[0])+' '+fmt(t.splits[u]));
-  return parts.length?`<div style="font-size:10px;color:var(--text3);margin-top:1px">Split: ${parts.join(' · ')}</div>`:'';
+  const ent=Object.keys(t.splits).filter(u=>b.members[u]&&t.splits[u]>0.004);
+  if(!ent.length)return '';
+  const txt=ent.length===1?(ent[0]===t.createdBy?'No split · own expense':'Full amount for '+fn(ent[0])):'Split: '+ent.map(u=>fn(u)+' '+fmt(t.splits[u])).join(' · ');
+  return `<div style="font-size:10px;color:var(--text3);margin-top:1px">${esc(txt)}</div>`;
 }
 // ── PAYMENTS LEDGER (net balance between each pair of members) ──
 // c = the member who is owed (paid more for the other), d = the member who has to pay. Balance = d's shares on c's entries
@@ -1057,59 +1100,75 @@ function renderPending(){
   rows.sort((x,y)=>((y.c===U.uid||y.d===U.uid)-(x.c===U.uid||x.d===U.uid))||y.bal-x.bal);
   return head+rows.map(o=>{
     const other=o.c===U.uid?o.d:o.c,done=o.bal<=0.004,recv=o.c===U.uid,tot=Math.max(0,o.fwd-o.back),pct=tot>0?Math.min(100,Math.round(o.pay/tot*100)):(done?100:0);
-    const col=done||recv?'var(--green)':'var(--amber)',all=allTimeRow(o.c,o.d),canRec=!!all&&all.c===U.uid&&all.bal>0.004&&canEdit(b);
+    const col=done||recv?'var(--green)':'var(--amber)',all=allTimeRow(o.c,o.d),open=!!all&&all.bal>0.004&&canEdit(b);
+    const canRec=open&&all.c===U.uid,canPay=open&&all.d===U.uid;
     return `<div class="pend-card"><div class="pend-top"><div class="member-avatar">${esc(initials(fn(other)))}</div>
       <div style="flex:1;min-width:0"><div class="pend-txt">${done?'Settled with '+esc(fn(other)):esc(payLine(o.c,o.d))}</div>
-      <div class="pend-sub">${esc(nm(o.c))} paid for ${esc(nmo(o.d))} ${fmt(o.fwd)}${o.back>0?' · '+esc(nm(o.d))+' paid for '+esc(nmo(o.c))+' '+fmt(o.back):''}${o.pay!==0?' · '+(recv?'Received ':'Paid ')+fmt(o.pay):''}</div></div>
+      <div class="pend-sub">${esc(nm(o.c))} paid for ${esc(nmo(o.d))} ${fmt(o.fwd)}${o.back>0?' · '+esc(nm(o.d))+' paid for '+esc(nmo(o.c))+' '+fmt(o.back):''}${o.pay!==0?' · '+(done?'Payments ':recv?'Received ':'Paid ')+fmt(o.pay):''}</div></div>
       <div class="pend-amt" style="color:${col}">${fmt(o.bal)}</div></div>
       <div class="mem-bar" style="margin-top:8px"><div style="width:${pct}%;background:var(--green)"></div></div>
-      <div class="pend-actions"><button class="btn btn-ghost btn-sm" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d)">History</button>
-      ${canRec?`<button class="btn btn-primary btn-sm" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d)">Enter amount received</button>`:''}</div></div>`;
+      <div class="pend-actions"><button class="btn btn-ghost btn-sm" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,false)">History</button>
+      ${canRec?`<button class="btn btn-primary btn-sm" data-c="${esc(all.c)}" data-d="${esc(all.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,true)">Enter amount received</button>`:''}
+      ${canPay?`<button class="btn btn-primary btn-sm" data-c="${esc(all.c)}" data-d="${esc(all.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,true)">Pay now</button>`:''}</div></div>`;
   }).join('')+'</div>';
 }
 let _paySheet=null;
-function openPaySheet(c,d){_paySheet={c,d};openSheet();renderPaySheet();}
+function openPaySheet(c,d,all){_paySheet={c,d,all:!!all,touched:false};openSheet();renderPaySheet();}
+// "💸 Pay" button next to +: everything I still have to pay (all time), pick who if there is more than one
+function openPayNow(){
+  const b=currentBook();if(!b||!canEdit(b))return;
+  const open=ledger().filter(o=>o.bal>0.004&&(o.d===U.uid||o.c===U.uid));
+  const dues=open.filter(o=>o.d===U.uid),list=dues.length?dues:open;   // what I have to pay first; otherwise what I am to receive
+  if(!list.length){toast('Nothing pending');return;}
+  if(list.length===1){openPaySheet(list[0].c,list[0].d,true);return;}
+  _paySheet=null;openSheet();
+  $('sheetInner').innerHTML=`<div class="sheet-title">${dues.length?'Pay whom?':'Receive from whom?'}<button class="close-btn" onclick="closeSheetNow()">×</button></div>`+list.map(o=>{
+    const pay=o.d===U.uid,other=pay?o.c:o.d;
+    return `<div class="pend-card" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,true)" style="cursor:pointer"><div class="pend-top"><div class="member-avatar">${esc(initials(fn(other)))}</div>
+    <div style="flex:1"><div class="pend-txt">${pay?'To pay ':'To receive from '}${esc(fn(other))}</div></div><div class="pend-amt" style="${pay?'':'color:var(--green)'}">${fmt(o.bal)}</div></div></div>`;}).join('');
+}
 function renderPaySheet(){
   const P=_paySheet,b=currentBook();if(!P||!b||!$('sheetInner'))return;
   const keep=$('payAmt')?$('payAmt').value:'',keepDate=$('payDate')?$('payDate').value:'';
-  const o=ledger(viewTxns(),viewPays()).find(x=>samePair(x,P.c,P.d))||{c:P.c,d:P.d,fwd:0,back:0,pay:0,bal:0};
-  const all=allTimeRow(P.c,P.d),canRec=!!all&&all.c===U.uid&&all.bal>0.004&&canEdit(b),recv=o.c===U.uid;
-  const hist=viewPays().filter(p=>(p.from===P.c&&p.to===P.d)||(p.from===P.d&&p.to===P.c)).sort((x,y)=>y.date.localeCompare(x.date)||y.createdAt.localeCompare(x.createdAt));
-  const form=canRec?`<div class="form-group"><label class="form-label">${esc(nm(all.d))} paid (₹)</label>
-      <input class="form-input" id="payAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" oninput="payPreview()" value="${esc(keep)}"/>
-      <div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pay-sub" id="payNote"></span><button class="split-reset" onclick="payFull()">Full balance ${fmt(all.bal)}</button></div></div>
+  const txns=P.all?S.transactions:viewTxns(),pays=P.all?S.payments:viewPays(),per=P.all?'All time':periodLabel();
+  const o=ledger(txns,pays).find(x=>samePair(x,P.c,P.d))||{c:P.c,d:P.d,fwd:0,back:0,pay:0,bal:0};
+  const all=allTimeRow(P.c,P.d),open=!!all&&all.bal>0.004&&canEdit(b);
+  const canRec=open&&all.c===U.uid,canPay=open&&all.d===U.uid,recv=o.c===U.uid;
+  const hist=pays.filter(p=>(p.from===P.c&&p.to===P.d)||(p.from===P.d&&p.to===P.c)).sort((x,y)=>y.date.localeCompare(x.date)||y.createdAt.localeCompare(x.createdAt));
+  const amtVal=(keep!==''||P.touched)?keep:(canPay?String(all.bal):'');   // paying: starts at the full pending amount, editable
+  const form=(canRec||canPay)?`<div class="form-group"><label class="form-label">${canPay?'You pay '+esc(nmo(all.c)):esc(nm(all.d))+' paid'} (₹)</label>
+      <input class="form-input" id="payAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" oninput="onPayInput()" value="${esc(amtVal)}"/>
+      <div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pay-sub" id="payNote"></span><button class="split-reset" onclick="payFull()">Full ${fmt(all.bal)}</button></div></div>
     <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="payDate" type="date" value="${esc(keepDate||today())}"/></div>
-    <button class="btn btn-primary" onclick="savePayment()" style="margin-bottom:14px">Save payment</button>`:'';
+    <button class="btn btn-primary" onclick="savePayment()" style="margin-bottom:14px">${canPay?'Pay':'Save payment'}</button>`:'';
   const rows=hist.length?hist.map(p=>`<div class="pay-row" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div class="pay-top"><span>${esc(nm(p.from))} paid ${esc(nmo(p.to))} ${fmt(p.amount)}</span></div><div class="pay-sub">${esc(p.date)}</div></div>
-      ${p.to===U.uid?`<button class="close-btn" data-id="${esc(p.id)}" onclick="deletePayment(this.dataset.id)" title="Delete">×</button>`:''}</div>`).join(''):'<div class="pay-sub" style="margin-bottom:6px">No payments in this period</div>';
+      ${(p.to===U.uid||p.from===U.uid)?`<button class="close-btn" data-id="${esc(p.id)}" onclick="deletePayment(this.dataset.id)" title="Delete">×</button>`:''}</div>`).join(''):'<div class="pay-sub" style="margin-bottom:6px">No payments in this period</div>';
   $('sheetInner').innerHTML=`<div class="sheet-title">${esc(payLine(o.c,o.d))}<button class="close-btn" onclick="closeSheetNow()">×</button></div>
-    <div class="pend-card" style="margin-bottom:14px"><div class="pend-top"><div style="flex:1"><div class="pend-txt">${o.bal<=0.004?'Settled':(o.d===U.uid?'Balance to pay':'Balance to receive')} · ${esc(periodLabel())}</div>
-      <div class="pend-sub">${esc(nm(o.c))} paid for ${esc(nmo(o.d))} ${fmt(o.fwd)}${o.back>0?' · '+esc(nm(o.d))+' paid for '+esc(nmo(o.c))+' '+fmt(o.back):''}${o.pay!==0?' · '+(recv?'Received ':'Paid ')+fmt(o.pay):''}</div></div><div class="pend-amt" style="color:${o.bal<=0.004||recv?'var(--green)':'var(--amber)'}">${fmt(o.bal)}</div></div></div>
-    ${form}<div class="section-title" style="margin-bottom:8px">Payment history · ${esc(periodLabel())}</div>${rows}`;
-  if(canRec)payPreview();
+    <div class="pend-card" style="margin-bottom:14px"><div class="pend-top"><div style="flex:1"><div class="pend-txt">${o.bal<=0.004?'Settled':(o.d===U.uid?'Pending to pay':'Balance to receive')} · ${esc(per)}</div>
+      <div class="pend-sub">${esc(nm(o.c))} paid for ${esc(nmo(o.d))} ${fmt(o.fwd)}${o.back>0?' · '+esc(nm(o.d))+' paid for '+esc(nmo(o.c))+' '+fmt(o.back):''}${o.pay!==0?' · '+(o.bal<=0.004?'Payments ':recv?'Received ':'Paid ')+fmt(o.pay):''}</div></div><div class="pend-amt" style="color:${o.bal<=0.004||recv?'var(--green)':'var(--amber)'}">${fmt(o.bal)}</div></div></div>
+    ${form}<div class="section-title" style="margin-bottom:8px">Payment history · ${esc(per)}</div>${rows}`;
+  if(canRec||canPay)payPreview();
 }
 function payBalance(){const P=_paySheet,a=P&&allTimeRow(P.c,P.d);return a?a.bal:0;}
-function payFull(){
-  const P=_paySheet,o=ledger(viewTxns(),viewPays()).find(x=>samePair(x,P.c,P.d)),all=payBalance();
-  $('payAmt').value=(o&&o.c===(allTimeRow(P.c,P.d)||{}).c&&o.bal>0.004)?Math.min(o.bal,all):all;payPreview();
-}
+function onPayInput(){if(_paySheet)_paySheet.touched=true;payPreview();}
+function payFull(){if(_paySheet)_paySheet.touched=true;$('payAmt').value=payBalance();payPreview();}
 function payPreview(){
   const n=$('payNote');if(!n)return;
   const amt=parseFloat($('payAmt').value),bal=payBalance();
   n.style.color='';n.className='pay-sub';
-  if(!amt){n.textContent='Total balance '+fmt(bal);return;}
-  if(amt>bal+0.004){n.style.color='var(--red)';n.textContent='More than the total balance '+fmt(bal);return;}
+  if(!amt){n.textContent='Pending '+fmt(bal);return;}
+  if(amt>bal+0.004){n.style.color='var(--red)';n.textContent='More than the pending '+fmt(bal);return;}
   n.textContent='Balance after this: '+fmt(r2(bal-amt));
 }
 function savePayment(){
   const b=currentBook(),P=_paySheet,all=P&&allTimeRow(P.c,P.d);
-  if(!b||!all||!canEdit(b)||all.c!==U.uid||all.bal<=0.004){toast('Only the person to receive can record this');return;}
+  if(!b||!all||!canEdit(b)||all.bal<=0.004||(all.c!==U.uid&&all.d!==U.uid)){toast('Nothing to record');return;}
   const amt=r2(parseFloat($('payAmt').value)),date=$('payDate').value;
-  if(!amt||amt<=0){toast('Enter the amount paid');return;}
-  if(amt>all.bal+0.004){toast('That is more than the balance '+fmt(all.bal));return;}
+  if(!amt||amt<=0){toast('Enter the amount');return;}
+  if(amt>all.bal+0.004){toast('That is more than the pending '+fmt(all.bal));return;}
   if(!date){toast('Pick a date');return;}
-  payCol(b.id).doc().set({from:all.d,to:all.c,amount:amt,date,createdAt:nowISO()}).catch(dbErr);
-  $('payAmt').value='';toast('Payment recorded ✓');
+  payCol(b.id).doc().set({from:all.d,to:all.c,amount:amt,date,createdAt:nowISO()}).catch(dbErr);   // from = payer, to = receiver
+  P.touched=false;$('payAmt').value='';toast('Payment recorded ✓');
 }
 function deletePayment(id){
   const b=currentBook();if(!b||!confirm('Delete this payment? The balance will go back up.'))return;
@@ -1376,18 +1435,37 @@ function openTxnSheet(txnId){
   setTimeout(()=>{try{$('fAmt').focus();}catch(e){}},300);
 }
 // ── split state: manual = uids whose amount the user typed; vals = current amount text per uid
-let _split={manual:{},vals:{}};
+let _split={manual:{},vals:{},preset:'equal'};
 function splitActive(){const b=currentBook();return !!b&&isShared(b)&&_txnType==='expense';}
+function payerUid(){return _editTxn&&_editTxn.createdBy?_editTxn.createdBy:U.uid;}
+function splitKey(){return 'flyover_split_'+S.currentBookId;}
+// preset: 'equal' | 'me' (payer bears it all, no split) | <uid> (that member owes the full amount) | 'custom'
+function fillPreset(){
+  const b=currentBook();if(!b)return;
+  const uids=memberList(b).map(m=>m.uid),amt=parseFloat(($('fAmt')||{}).value)||0,p=_split.preset;
+  _split.manual={};
+  if(p==='equal'||p==='custom'){recalcSplit();return;}
+  const target=p==='me'?payerUid():p,full=Math.round(amt*100)/100;
+  uids.forEach(u=>{_split.vals[u]=amt?String(u===target?full:0):'';});
+}
+function detectPreset(ex,uids){
+  const eq=equalShares(ex.amount,uids);
+  if(uids.every(u=>Math.abs((ex.splits[u]||0)-eq[u])<0.005))return 'equal';
+  const full=uids.find(u=>Math.abs((ex.splits[u]||0)-ex.amount)<0.005&&uids.every(v=>v===u||(ex.splits[v]||0)<0.005));
+  return full?(full===ex.createdBy?'me':full):'custom';
+}
 function initSplit(ex){
-  const b=currentBook();_split={manual:{},vals:{}};
+  const b=currentBook();_split={manual:{},vals:{},preset:'equal'};
   if(!b||!isShared(b))return;
   const uids=memberList(b).map(m=>m.uid);
   if(ex&&ex.type==='expense'&&ex.splits){
-    // editing: keep the saved split; treat it as manual if it isn't an equal split
-    const eq=equalShares(ex.amount,uids);
-    const isEq=uids.every(u=>Math.abs((ex.splits[u]||0)-eq[u])<0.005);
-    uids.forEach(u=>{_split.vals[u]=String(ex.splits[u]||0);if(!isEq)_split.manual[u]=true;});
-  }else recalcSplit();
+    _split.preset=detectPreset(ex,uids);
+    uids.forEach(u=>{_split.vals[u]=String(ex.splits[u]||0);if(_split.preset==='custom')_split.manual[u]=true;});
+  }else{
+    let p=lsGet(splitKey())||'equal';   // remembered per book on this device (e.g. couples keep "Only me")
+    if(p!=='equal'&&p!=='me'&&(!uids.includes(p)||p===U.uid))p='equal';
+    _split.preset=p;fillPreset();
+  }
   renderSplitBox();
 }
 function recalcSplit(){
@@ -1402,17 +1480,23 @@ function recalcSplit(){
 }
 function onAmtInput(){
   if(!splitActive())return;
-  _split.manual={};recalcSplit();renderSplitBox();   // new amount → back to an equal split
+  if(_split.preset==='custom')_split.preset='equal';   // typed shares are reset by a new amount; presets are kept
+  fillPreset();renderSplitBox();
 }
+function setSplitPreset(p){
+  _split.preset=p;fillPreset();renderSplitBox();lsSet(splitKey(),p);
+}
+function resetSplit(){setSplitPreset('equal');}
 function onSplitInput(uid,el){
-  _split.manual[uid]=true;_split.vals[uid]=el.value;
+  _split.preset='custom';_split.manual[uid]=true;_split.vals[uid]=el.value;
   const b=currentBook(),uids=memberList(b).map(m=>m.uid);
-  if(uids.every(u=>_split.manual[u])){/* everyone typed: just validate */}
-  else recalcSplit();
+  if(!uids.every(u=>_split.manual[u]))recalcSplit();
   uids.forEach(u=>{const i=document.querySelector('.split-input[data-u="'+u+'"]');if(i&&i!==el){i.value=_split.vals[u];i.classList.toggle('manual',!!_split.manual[u]);}});
-  el.classList.add('manual');updateSplitNote();
+  el.classList.add('manual');
+  document.querySelectorAll('.split-chip').forEach(c=>c.classList.remove('on'));
+  const h=$('splitHint');if(h)h.textContent='Custom amounts';
+  updateSplitNote();
 }
-function resetSplit(){_split.manual={};recalcSplit();renderSplitBox();}
 function splitTotals(){
   const b=currentBook(),uids=memberList(b).map(m=>m.uid);
   const amt=Math.round((parseFloat($('fAmt').value)||0)*100),sum=Math.round(uids.reduce((s,u)=>s+(parseFloat(_split.vals[u])||0),0)*100);
@@ -1427,11 +1511,22 @@ function updateSplitNote(){
   const b=currentBook(),list=memberList(b),tot=amt/100;
   list.forEach(m=>{const e=document.querySelector('.split-pct[data-u="'+m.uid+'"]');if(e)e.textContent=tot?Math.round((parseFloat(_split.vals[m.uid])||0)/tot*100)+'%':'';});
 }
+function splitHintText(){
+  const p=_split.preset,me=payerUid(),who=me===U.uid?'you':fn(me);
+  if(p==='equal')return 'Everyone pays an equal share';
+  if(p==='me')return 'No split · nobody has to pay '+who+' back';
+  if(p==='custom')return 'Custom amounts';
+  return fn(p)+' will pay '+who+' the full amount';
+}
 function renderSplitBox(){
   const box=$('splitBox');if(!box)return;
   if(!splitActive()){box.innerHTML='';return;}
-  const b=currentBook();
-  box.innerHTML=`<div class="split-box"><div class="split-hdr"><span class="split-title">Split · you paid, others will pay you their share</span><button class="split-reset" onclick="resetSplit()">Reset to equal</button></div>
+  const b=currentBook(),me=payerUid(),first=m=>String(m.name||'').split(' ')[0];
+  const chips=[{p:'equal',l:'⚖️ Equal'},{p:'me',l:me===U.uid?'👤 Only me (no split)':'👤 Only '+fn(me)}]
+    .concat(memberList(b).filter(m=>m.uid!==me).map(m=>({p:m.uid,l:'👤 Only '+first(m)+(m.uid===U.uid?' (you)':'')})));
+  box.innerHTML=`<div class="split-box"><div class="split-hdr"><span class="split-title">Split · who pays for this?</span></div>
+    <div class="split-chips">${chips.map(c=>`<button type="button" class="split-chip ${_split.preset===c.p?'on':''}" data-p="${esc(c.p)}" onclick="setSplitPreset(this.dataset.p)">${esc(c.l)}</button>`).join('')}</div>
+    <div class="split-hint" id="splitHint">${esc(splitHintText())}</div>
     ${memberList(b).map(m=>`<div class="split-row"><span class="split-name">${esc(m.name)}${m.uid===U.uid?' (you)':''}</span><span class="split-pct" data-u="${esc(m.uid)}"></span>
       <input class="split-input ${_split.manual[m.uid]?'manual':''}" data-u="${esc(m.uid)}" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${esc(_split.vals[m.uid]||'')}" oninput="onSplitInput(this.dataset.u,this)"/></div>`).join('')}
     <div class="split-note" id="splitNote"></div></div>`;
