@@ -291,6 +291,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-sy
 .split-chip{padding:6px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer}
 .split-chip.on{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
 .split-hint{font-size:11px;color:var(--text2);margin-bottom:6px}
+/* ── entry owner colours, who filter, search ── */
+.who-chip{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:4px;vertical-align:1px}
+.who-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:0 10px;margin-bottom:10px}
+.search-wrap:focus-within{border-color:var(--blue)}
+.search-input{flex:1;min-width:0;border:none;outline:none;background:none;color:var(--text);font-size:15px;padding:11px 0;font-family:inherit}
+.search-clear{display:none;width:22px;height:22px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:15px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0}
+mark.hit{background:var(--amber-light);color:inherit;border-radius:3px;padding:0 1px;font-weight:700}
+.search-info{font-size:12px;color:var(--text2);margin:-2px 2px 8px}
 /* ── + menu (expense / payment) ── */
 .addmenu-bg{position:absolute;inset:0;background:rgba(10,16,36,.45);z-index:44;display:none}
 .addmenu-bg.open{display:block}
@@ -521,7 +530,7 @@ function nowISO(){return new Date().toISOString();}
 let auth=null,db=null,FV=null;
 let U=null;                                   // signed-in user {uid,name,email}
 let S={books:[],currentBookId:null,transactions:[],payments:[]};   // cloud data (books = all mine, transactions = current book only)
-let V={month:today().slice(0,7),year:null,page:'dashboard',txnTab:'entries',catFilter:'all'};
+let V={month:today().slice(0,7),year:null,page:'dashboard',txnTab:'entries',catFilter:'all',who:'all',q:''};
 let unsubBooks=null,unsubTxns=null,unsubPays=null,txnsBookId=null;
 let booksLoaded=false,bootstrapping=false,pendingSelect=null,registerName='';
 const sync={books:false,txns:false};
@@ -611,7 +620,7 @@ function onSignedIn(user){
   teardown();
   U={uid:user.uid,name:user.displayName||registerName||(user.email||'').split('@')[0]||'User',email:user.email||''};
   S={books:[],currentBookId:null,transactions:[],payments:[]};
-  booksLoaded=false;V.page='dashboard';V.catFilter='all';V.txnTab='entries';
+  booksLoaded=false;V.page='dashboard';V.catFilter='all';V.who='all';V.q='';V.txnTab='entries';
   showScreen('mainScreen');
   showPage('dashboard');
   unsubBooks=db.collection('books').where('memberIds','array-contains',U.uid).onSnapshot(handleBooksSnap,dbErr);
@@ -869,7 +878,7 @@ function saveRenameBook(id){
 }
 function selectBook(id){
   if(!S.books.some(b=>b.id===id))return;
-  S.currentBookId=id;lsSet('flyover_cur_'+U.uid,id);V.catFilter='all';
+  S.currentBookId=id;lsSet('flyover_cur_'+U.uid,id);V.catFilter='all';V.who='all';V.q='';
   attachTxns(id);
   closeSheetNow();showPage('dashboard');
 }
@@ -1044,7 +1053,9 @@ function renderPage(){
     el.innerHTML=`<div class="empty-state" style="margin-top:60px"><div class="empty-icon">☁️</div><div class="empty-text">${booksLoaded?'Loading your books…':'Connecting…'}</div></div>`;
     return;
   }
+  const ae=document.activeElement,keepF=(ae&&ae.id==='txnSearch')?[ae.selectionStart,ae.selectionEnd]:null;
   el.innerHTML=V.page==='dashboard'?renderDashboard():V.page==='transactions'?renderTransactions():V.page==='categories'?renderCategoriesPage():renderProfilePage();
+  if(keepF){const n=$('txnSearch');if(n){n.focus();try{n.setSelectionRange(keepF[0],keepF[1]);}catch(e){}}}
   refreshShareSheetIfOpen();
 }
 function splitLine(t){
@@ -1209,16 +1220,30 @@ function renderMemberExpense(txns,exp){
   return `<div class="section" style="padding-bottom:0"><div class="section-hdr"><div class="section-title">Expense by member</div></div>${cards}${oth}
     <div class="mem-total"><span>Total expense</span><span style="color:var(--red)">${fmt(exp)}</span></div></div>`;
 }
-function txnRow(t,badge){
-  const by=isShared(currentBook())&&t.createdByName?`<span style="font-size:10px;color:var(--text3)"> · ${esc(t.createdByName)}</span>`:'';
-  return `<div class="txn-item" data-id="${esc(t.id)}" onclick="openTxnSheet(this.dataset.id)">
+const MEM_COLORS=['#3B82F6','#E0509A','#F59E0B','#8B5CF6','#14B8A6','#F97316','#64748B','#84CC16'];
+function memColor(uid){
+  const b=currentBook();if(!b)return '#9CA3AF';
+  const i=Object.keys(b.members).sort().indexOf(uid);
+  return i<0?'#9CA3AF':MEM_COLORS[i%MEM_COLORS.length];
+}
+function hl(str,toks){
+  str=String(str==null?'':str);
+  if(!toks||!toks.length)return esc(str);
+  const re=new RegExp('('+toks.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi');
+  return str.split(re).map((p,i)=>i%2?'<mark class="hit">'+esc(p)+'</mark>':esc(p)).join('');
+}
+function txnRow(t,badge,toks){
+  const b=currentBook(),shared=isShared(b),mc=shared?memColor(t.createdBy):'';
+  const who=shared?((b.members[t.createdBy]&&(b.members[t.createdBy].name||b.members[t.createdBy].email))||t.createdByName||'').split(' ')[0]:'';
+  const by=shared&&who?`<span class="who-chip" style="background:${mc}22;color:${mc}">${hl(who,toks)}</span>`:'';
+  return `<div class="txn-item" data-id="${esc(t.id)}" onclick="openTxnSheet(this.dataset.id)"${shared?` style="border-left:4px solid ${mc}"`:''}>
     <div class="txn-icon" style="background:${catColor(t.category)}22">${esc(catEmoji(t.category))}</div>
     <div class="txn-body">
-      <div class="txn-cat">${esc(t.category)}${badge?` <span class="badge badge-${t.type}">${t.type}</span>`:''}${by}</div>
-      <div class="txn-meta">${t.remark?(badge?'💬 ':'')+esc(t.remark):t.date}</div>
+      <div class="txn-cat">${hl(t.category,toks)}${badge?` <span class="badge badge-${t.type}">${t.type}</span>`:''}${by}</div>
+      <div class="txn-meta">${t.remark?(badge?'💬 ':'')+hl(t.remark,toks):hl(t.date,toks)}</div>
       ${splitLine(t)}
     </div>
-    <div class="txn-right"><div class="txn-amt ${t.type}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div><div class="txn-date">${t.date}</div></div></div>`;
+    <div class="txn-right"><div class="txn-amt ${t.type}">${t.type==='income'?'+':'-'}${hl(fmt(t.amount),toks)}</div><div class="txn-date">${hl(t.date,toks)}</div></div></div>`;
 }
 function renderDashboard(){
   const txns=viewTxns();
@@ -1257,29 +1282,70 @@ function compareMonthKey(){
   if(V.month!=='all')return V.month;
   return getBookMonths(V.year||today().slice(0,4))[0]||today().slice(0,7);
 }
-function renderTransactions(){
-  const tabs=`<div class="sub-tabs" style="margin-bottom:12px">
-    <div class="sub-tab${V.txnTab==='entries'?' active':''}" onclick="setTxnSubTab('entries')">Entries</div>
-    <div class="sub-tab${V.txnTab==='compare'?' active':''}" onclick="setTxnSubTab('compare')">Compare</div></div>`;
-  if(V.txnTab==='compare')return tabs+renderCompareTab();
-  const all=viewTxns().sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
-  const present=[...new Set(all.map(t=>t.category))];
+function searchToks(){return String(V.q||'').toLowerCase().split(/\s+/).filter(Boolean);}
+function txnHay(t){
+  const b=currentBook(),m=b&&b.members[t.createdBy];
+  return [t.category,t.remark||'',String(t.amount),fmt(t.amount).replace(/[₹,]/g,''),t.date,monthLabel(t.date.slice(0,7)),t.type,(m&&(m.name||m.email))||t.createdByName||''].join(' ').toLowerCase();
+}
+// pool = this period (or the whole book while searching), narrowed by search words, then by member and category
+function txnData(){
+  const b=currentBook(),toks=searchToks(),searching=toks.length>0;
+  if(V.who!=='all'&&!(b&&b.members[V.who]))V.who='all';
+  const pool=(searching?S.transactions:viewTxns()).slice().sort((a,c)=>c.date.localeCompare(a.date)||(c.createdAt||'').localeCompare(a.createdAt||''));
+  const matched=searching?pool.filter(t=>{const h=txnHay(t);return toks.every(w=>h.includes(w));}):pool;
+  const byWho=V.who==='all'?matched:matched.filter(t=>t.createdBy===V.who);
+  const present=[...new Set(byWho.map(t=>t.category))];
   if(V.catFilter!=='all'&&!present.includes(V.catFilter))V.catFilter='all';
-  const filter=all.length?`<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:-2px -2px 0">
+  const final=(searching||V.catFilter==='all')?byWho:byWho.filter(t=>t.category===V.catFilter);
+  return{toks,searching,pool,matched,byWho,present,final};
+}
+function renderTxnFilters(){
+  const b=currentBook(),D=txnData();
+  let h='';
+  if(isShared(b)){
+    const list=memberList(b);
+    h+=`<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin:-2px -2px 0">
+      <div class="cat-chip${V.who==='all'?' selected':''}" style="flex-shrink:0" onclick="setTxnWho('all')">👥 All <span style="color:var(--text3)">${D.matched.length}</span></div>
+      ${list.map(m=>{const n=D.matched.filter(t=>t.createdBy===m.uid).length,c=memColor(m.uid);
+        return `<div class="cat-chip${V.who===m.uid?' selected':''}" style="flex-shrink:0" data-u="${esc(m.uid)}" onclick="setTxnWho(this.dataset.u)"><span class="who-dot" style="background:${c}"></span>${esc(String(m.name).split(' ')[0])}${m.uid===U.uid?' (you)':''} <span style="color:var(--text3)">${n}</span></div>`;}).join('')}</div>`;
+  }
+  if(!D.searching&&D.byWho.length)h+=`<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:-2px -2px 0">
     <div class="cat-chip${V.catFilter==='all'?' selected':''}" style="flex-shrink:0" onclick="setTxnCatFilter('all')">All</div>
-    ${present.map(c=>`<div class="cat-chip${V.catFilter===c?' selected':''}" style="flex-shrink:0" data-c="${esc(c)}" onclick="setTxnCatFilter(this.dataset.c)">${esc(catEmoji(c))} ${esc(c)}</div>`).join('')}</div>`:'';
-  const txns=V.catFilter==='all'?all:all.filter(t=>t.category===V.catFilter);
-  if(!txns.length)return `${tabs}${filter}<div class="empty-state" style="margin-top:40px"><div class="empty-icon">📭</div><div class="empty-text">No entries for ${periodLabel()}</div></div>`;
+    ${D.present.map(c=>`<div class="cat-chip${V.catFilter===c?' selected':''}" style="flex-shrink:0" data-c="${esc(c)}" onclick="setTxnCatFilter(this.dataset.c)">${esc(catEmoji(c))} ${esc(c)}</div>`).join('')}</div>`;
+  return h;
+}
+function renderTxnResults(){
+  const D=txnData(),txns=D.final,b=currentBook();
+  const who=(V.who!=='all'&&isShared(b))?' · '+esc(fn(V.who)):'';
+  if(!txns.length){
+    return D.searching?`<div class="empty-state" style="margin-top:30px"><div class="empty-icon">🔍</div><div class="empty-text">No entries found for “${esc(V.q.trim())}”<br><small>Searched all months${who?' · '+esc(fn(V.who))+' only':''}</small></div></div>`
+      :`<div class="empty-state" style="margin-top:40px"><div class="empty-icon">📭</div><div class="empty-text">No entries for ${esc(periodLabel())}${who?' · '+esc(fn(V.who)):''}</div></div>`;
+  }
   const inc=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const exp=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const parts=[];
   if(exp>0)parts.push(`<span style="color:var(--red)">-${fmt(exp)}</span>`);
   if(inc>0)parts.push(`<span style="color:var(--green)">+${fmt(inc)}</span>`);
-  return `${tabs}${filter}<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:10px">
-    <span style="font-size:12px;font-weight:600;color:var(--text2)">${V.catFilter==='all'?'Total':esc(V.catFilter)} (${txns.length})</span>
+  const label=D.searching?'Found':(V.catFilter==='all'?'Total':esc(V.catFilter));
+  return `${D.searching?`<div class="search-info">Searching all months${who}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:10px">
+    <span style="font-size:12px;font-weight:600;color:var(--text2)">${label}${who} (${txns.length})</span>
     <span style="font-size:14px;font-weight:700">${parts.join(' &nbsp;/&nbsp; ')||fmt(inc-exp)}</span></div>
-    <div class="section">${txns.map(t=>txnRow(t,true)).join('')}</div>`;
+    <div class="section">${txns.map(t=>txnRow(t,true,D.toks)).join('')}</div>`;
 }
+function renderTransactions(){
+  const tabs=`<div class="sub-tabs" style="margin-bottom:12px">
+    <div class="sub-tab${V.txnTab==='entries'?' active':''}" onclick="setTxnSubTab('entries')">Entries</div>
+    <div class="sub-tab${V.txnTab==='compare'?' active':''}" onclick="setTxnSubTab('compare')">Compare</div></div>`;
+  if(V.txnTab==='compare')return tabs+renderCompareTab();
+  const search=`<div class="search-wrap"><span style="font-size:15px;opacity:.6">🔍</span>
+    <input class="search-input" id="txnSearch" type="search" autocomplete="off" placeholder="Search entries (e.g. sugar, 500, Rahul)" value="${esc(V.q)}" oninput="onTxnSearch(this)"/>
+    <button class="search-clear" id="txnClear" style="display:${V.q?'flex':'none'}" onclick="clearTxnSearch()" aria-label="Clear">×</button></div>`;
+  return `${tabs}${search}<div id="txnFilters">${renderTxnFilters()}</div><div id="txnResults">${renderTxnResults()}</div>`;
+}
+function refreshTxnList(){const f=$('txnFilters'),r=$('txnResults');if(f)f.innerHTML=renderTxnFilters();if(r)r.innerHTML=renderTxnResults();}
+function onTxnSearch(el){V.q=el.value;const c=$('txnClear');if(c)c.style.display=V.q?'flex':'none';refreshTxnList();}
+function clearTxnSearch(){V.q='';const i=$('txnSearch');if(i){i.value='';i.focus();}const c=$('txnClear');if(c)c.style.display='none';refreshTxnList();}
+function setTxnWho(u){V.who=u;refreshTxnList();}
 function renderCompareTab(){
   const curM=compareMonthKey(),prevM=prevMonthKey(curM);
   const cur=S.transactions.filter(t=>t.date.startsWith(curM)),prev=S.transactions.filter(t=>t.date.startsWith(prevM));
