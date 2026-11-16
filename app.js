@@ -1,2315 +1,2012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#185FA5"/>
+<title>Flyover</title>
+<script>
+(function(){var m='auto';try{m=localStorage.getItem('flyover_theme')||'auto';}catch(e){}
+var dark=m==='dark'||(m==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches);
+document.documentElement.setAttribute('data-theme',dark?'dark':'light');})();
+</script>
+<style>
 
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+:root{
+  color-scheme:light;
+  --blue:#185FA5;--blue-light:#E6F1FB;--blue-dark:#0C447C;
+  --grad:#185FA5;--card-grad:#185FA5;
+  --yellow:#BA7517;
+  --green:#1D9E75;--green-light:#E1F5EE;
+  --red:#D85A30;--red-light:#FAECE7;
+  --amber:#BA7517;--amber-light:#FAEEDA;
+  --purple:#534AB7;--purple-light:#EEEDFE;
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;
+  --border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af;
+  --radius:10px;--radius-lg:14px;--radius-xl:18px;
+  --shadow:0 1px 4px rgba(0,0,0,0.08);--shadow-lg:0 4px 20px rgba(0,0,0,0.12);
+  --app-h:100vh;
+  /* component tokens (light = original look) */
+  --hdr-bg:var(--surface);--hdr-rad:0;--hdr-pb:10px;--hdr-sh:none;--hdr-bb:1px solid var(--border);
+  --logo:var(--blue);--ham-bg:var(--surface2);--ham-fg:var(--text);
+  --av-bg:var(--blue-light);--av-fg:var(--blue);--av-bd:var(--border);
+  --ctl-bg:var(--surface2);--ctl-bd:var(--border);--ctl-fg:var(--text);--chev:var(--text3);
+  --month-pad:8px 14px 0;--nav-act-sh:none;--nav-act-rad:var(--radius);
+  --fab-bg:var(--blue);--fab-fg:#fff;--fab-sh:0 4px 16px rgba(24,95,165,.35);
+  --bal-sh:0 4px 14px rgba(24,95,165,.3);--ring:rgba(255,255,255,.6);--hero-btn:rgba(255,255,255,.18);
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --blue:#3B82F6;--blue-light:rgba(59,130,246,.18);--blue-dark:#2A5FC4;
+  --grad:linear-gradient(160deg,#41466B 0%,#3D4265 55%,#383D5F 100%);
+  --green:#8BC34A;--green-light:rgba(139,195,74,.16);
+  --red:#F45B78;--red-light:rgba(244,91,120,.16);
+  --amber:#FFB800;--amber-light:rgba(255,184,0,.16);
+  --purple:#8B92F0;--purple-light:rgba(139,146,240,.16);
+  --bg:#343959;--surface:#3D4266;--surface2:#353A5C;
+  --border:#4D5380;--text:#FFFFFF;--text2:#B0B5D2;--text3:#8087AB;
+  --shadow:0 1px 4px rgba(0,0,0,0.25);--shadow-lg:0 4px 24px rgba(0,0,0,0.45);
+  --card-grad:linear-gradient(135deg,#3B82F6 0%,#5B6CE8 100%);--yellow:#FFB800;
+  --hdr-bg:var(--grad);--hdr-rad:0 0 22px 22px;--hdr-pb:14px;--hdr-sh:0 4px 16px rgba(20,24,48,.3);--hdr-bb:none;
+  --logo:#fff;--ham-bg:rgba(255,255,255,.15);--ham-fg:#fff;
+  --av-bg:rgba(255,255,255,.15);--av-fg:#fff;--av-bd:var(--yellow);
+  --ctl-bg:rgba(255,255,255,.15);--ctl-bd:rgba(255,255,255,.3);--ctl-fg:#fff;--chev:rgba(255,255,255,.7);
+  --month-pad:10px 0 0;--nav-act-sh:inset 0 3px 0 var(--yellow);--nav-act-rad:0 0 10px 10px;
+  --fab-bg:var(--yellow);--fab-fg:#2A2E4A;--fab-sh:0 4px 16px rgba(0,0,0,.35);
+  --bal-sh:0 4px 14px rgba(59,130,246,.35);--ring:var(--yellow);--hero-btn:rgba(255,255,255,.15);
+}
+
+#app{height:var(--app-h);display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+
+/* ── SCREENS ─────────────────────────────────── */
+.screen{display:none;flex-direction:column;height:100%;overflow:hidden}
+.screen.active{display:flex}
+
+.sub-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;margin-bottom:20px}
+.sub-tab{padding:9px;text-align:center;font-size:14px;font-weight:500;border-radius:8px;cursor:pointer;color:var(--text2);transition:all .15s}
+.sub-tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+.form-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:15px;color:var(--text);background:var(--surface);outline:none;transition:border .15s}
+.form-input:focus{border-color:var(--blue)}
+.btn{width:100%;padding:13px;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:active{transform:scale(.98)}
+
+/* ── HEADER ──────────────────────────────────── */
+.header{background:var(--hdr-bg);border-bottom:var(--hdr-bb);border-radius:var(--hdr-rad);padding:10px 14px var(--hdr-pb);flex-shrink:0;box-shadow:var(--hdr-sh);position:relative;z-index:5}
+.hamburger{width:36px;height:36px;border-radius:10px;border:none;background:var(--ham-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0}
+.hamburger span{display:block;width:18px;height:2px;border-radius:2px;background:var(--ham-fg)}
+.header-left{display:flex;align-items:center;gap:10px;min-width:0}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.logo{font-size:19px;font-weight:700;color:var(--logo);letter-spacing:-.5px}
+.header-right{display:flex;align-items:center;gap:8px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--av-bg);color:var(--av-fg);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--av-bd)}
+
+/* ── BOOK SELECTOR ───────────────────────────── */
+.book-selector{display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--ctl-bg);border:1.5px solid var(--ctl-bd);border-radius:var(--radius);padding:7px 12px;max-width:220px;min-width:0}
+.book-name{font-size:13px;font-weight:600;color:var(--ctl-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.book-icon{font-size:16px;flex-shrink:0}
+.chevron{color:var(--chev);font-size:12px;flex-shrink:0}
+
+/* ── MONTH TABS ──────────────────────────────── */
+.month-scroll{display:flex;gap:6px;overflow-x:auto;padding:var(--month-pad);scrollbar-width:none}
+.month-scroll::-webkit-scrollbar{display:none}
+
+/* ── PAGE CONTENT ────────────────────────────── */
+.page-scroll{flex:1;overflow-y:auto;padding-bottom:80px}
+
+/* ── SUMMARY CARDS ───────────────────────────── */
+.summary-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 0}
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;box-shadow:var(--shadow)}
+.s-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:500}
+.s-val{font-size:20px;font-weight:700}
+.s-val.income{color:var(--green)}
+.s-val.expense{color:var(--red)}
+.balance-card{grid-column:1/-1;background:var(--blue);border:none;border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--bal-sh);background:var(--card-grad)}
+.balance-card .s-label{color:rgba(255,255,255,.7)}
+.balance-card .s-val{color:#fff;font-size:24px}
+.balance-card .s-val.negative{color:#ffc9b8}
+.balance-card .s-label{color:rgba(255,255,255,.75)}
+
+/* ── SECTION ─────────────────────────────────── */
+.section{padding:12px 14px}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.see-all{font-size:12px;color:var(--blue);cursor:pointer;font-weight:500}
+
+.cat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+/* ── TRANSACTIONS ────────────────────────────── */
+.txn-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:var(--shadow);transition:all .1s}
+.txn-item:active{transform:scale(.99)}
+.txn-icon{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.txn-body{flex:1;min-width:0}
+.txn-cat{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txn-meta{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txn-right{text-align:right;flex-shrink:0}
+.txn-amt{font-size:14px;font-weight:700}
+.txn-amt.income{color:var(--green)}
+.txn-amt.expense{color:var(--red)}
+.txn-date{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── NAV ─────────────────────────────────────── */
+.nav{background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:6px 0 max(10px, env(safe-area-inset-bottom));flex-shrink:0}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:500;color:var(--text2);border:none;background:none;cursor:pointer;padding:4px 14px;border-radius:var(--radius);transition:color .15s}
+.nav-btn.active{color:var(--blue);font-weight:700;box-shadow:var(--nav-act-sh);border-radius:var(--nav-act-rad)}
+.nav-icon{font-size:22px;line-height:1}
+
+/* ── FAB ─────────────────────────────────────── */
+.fab{position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));right:16px;width:54px;height:54px;border-radius:50%;background:var(--fab-bg);border:none;color:var(--fab-fg);font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--fab-sh);z-index:40;transition:transform .15s}
+.fab:active{transform:scale(.93)}
+
+/* ── BOTTOM SHEET ────────────────────────────── */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;align-items:flex-end}
+.sheet-bg.open{display:flex}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:430px;margin:0 auto;max-height:calc(var(--app-h) * .92);overflow-y:auto;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.sheet-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.close-btn{background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1;padding:0}
+
+/* ── TYPE TOGGLE ─────────────────────────────── */
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.type-btn{padding:10px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface2);font-size:14px;font-weight:600;cursor:pointer;color:var(--text2);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.type-btn.active-income{background:var(--green-light);color:var(--green);border-color:var(--green)}
+.type-btn.active-expense{background:var(--red-light);color:var(--red);border-color:var(--red)}
+
+/* ── CAT GRID ────────────────────────────────── */
+.cat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px}
+.cat-chip{padding:9px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text2);background:var(--surface2);transition:all .15s}
+.cat-chip.selected{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+
+/* ── BOOKS SHEET ─────────────────────────────── */
+.book-item{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s}
+.book-item:active{transform:scale(.99)}
+.book-item.current{border-color:var(--blue);background:var(--blue-light)}
+.book-item-icon{width:40px;height:40px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.book-item-body{flex:1;min-width:0}
+.book-item-name{font-size:14px;font-weight:600;color:var(--text)}
+.book-item-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.book-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;background:var(--blue-light);color:var(--blue);flex-shrink:0}
+
+/* ── MANAGE CATS ─────────────────────────────── */
+.manage-cat-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
+.add-row{display:flex;gap:8px;margin-top:10px}
+.add-row .form-input{flex:1}
+.add-row .btn-sq{width:44px;height:44px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── MISC ────────────────────────────────────── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:10px;opacity:.4}
+.empty-text{font-size:14px}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
+.badge-income{background:var(--green-light);color:var(--green)}
+.badge-expense{background:var(--red-light);color:var(--red)}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:100;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.btn-danger{background:var(--red)}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);margin-top:8px}
+.divider{height:1px;background:var(--border);margin:12px 0}
+
+/* profile page */
+.profile-section{padding:16px 14px}
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.profile-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:var(--blue);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.profile-name{font-size:18px;font-weight:700;color:var(--text)}
+.profile-email{font-size:13px;color:var(--text3);margin-top:2px}
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-row .label{color:var(--text2)}
+.info-row .value{color:var(--text);font-weight:500}
+.sync-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--green);font-weight:500}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+/* CATEGORY 3 DOT MENU */
+
+.manage-cat-item{
+  position:relative;
+}
+
+.cat-name{
+  flex:1;
+  font-size:14px;
+  color:var(--text);
+}
+
+.cat-menu-wrap{
+  margin-left:auto;
+}
+
+.cat-menu-btn{
+  border:none;
+  background:transparent;
+  color:var(--text2);
+  font-size:22px;
+  cursor:pointer;
+  padding:4px 8px;
+  border-radius:10px;
+}
+
+.cat-menu-btn:active{
+  background:var(--surface2);
+}
+
+.cat-popup-menu{
+  position:fixed;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:var(--shadow-lg);
+  overflow:hidden;
+  z-index:9999;
+  min-width:150px;
+}
+
+.cat-popup-item{
+  width:100%;
+  border:none;
+  background:none;
+  text-align:left;
+  padding:12px 14px;
+  cursor:pointer;
+  font-size:14px;
+  color:var(--text);
+}
+
+.cat-popup-item.delete{
+  color:var(--red);
+}
+
+.cat-popup-item:active{
+  background:var(--surface2);
+}
+
+
+/* ── pending payments ── */
+.pend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.pend-top{display:flex;align-items:center;gap:10px}
+.pend-amt{font-size:18px;font-weight:700;color:var(--amber)}
+.pend-txt{font-size:13px;font-weight:600;color:var(--text)}
+.pend-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.pend-actions{display:flex;gap:8px;margin-top:10px}
+.btn-sm{padding:9px 12px;font-size:13px;border-radius:8px;width:auto;flex:1}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.pend-ok{display:flex;align-items:center;gap:8px;background:var(--green-light);color:var(--green);border-radius:var(--radius-lg);padding:11px 12px;font-size:13px;font-weight:600}
+.pay-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer}
+.pay-chip.pend{background:var(--amber-light);color:var(--amber)}
+.pay-chip.done{background:var(--green-light);color:var(--green)}
+.pay-row{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+.pay-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.pay-left{color:var(--amber);white-space:nowrap}
+.pay-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.pay-act{display:flex;gap:8px;align-items:center;margin-top:8px}
+.pay-act .split-input{flex:1;width:auto;text-align:left}
+.pay-act .btn-sm{flex:0 0 auto;padding:9px 18px}
+.pay-log{font-size:11px;color:var(--text3);margin-top:6px}
+.pay-done{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
+/* ── split presets + pay button ── */
+.split-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.split-chip{padding:6px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer}
+.split-chip.on{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.split-hint{font-size:11px;color:var(--text2);margin-bottom:6px}
+.offbar{display:none;background:var(--amber-light);color:var(--amber);font-size:12px;font-weight:600;text-align:center;padding:6px 12px;flex-shrink:0}
+.bal-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:var(--radius-lg);padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
+.bal-head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;margin-bottom:8px}
+.bal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.bal-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.bal-v{font-size:14px;font-weight:700;margin-top:2px}
+/* ── change notifications ── */
+#notifWrap{position:fixed;top:0;left:0;right:0;z-index:90;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:calc(10px + env(safe-area-inset-top)) 12px 0}
+.notif{pointer-events:auto;width:100%;max-width:406px;background:var(--surface);border:1px solid var(--border);border-left:5px solid var(--blue);border-radius:14px;box-shadow:var(--shadow-lg);padding:10px 12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;animation:notifIn .25s ease}
+.notif.out{opacity:0;transform:translateY(-12px);transition:all .2s}
+@keyframes notifIn{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}
+.notif-ic{font-size:20px;line-height:1.2}
+.notif-t{font-size:13px;font-weight:700;color:var(--text)}
+.notif-b{font-size:12px;color:var(--text2);margin-top:1px;word-break:break-word}
+.notif-x{margin-left:auto;background:none;border:none;color:var(--text3);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+/* ── entry owner colours, who filter, search ── */
+.who-chip{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:4px;vertical-align:1px}
+.who-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:0 10px;margin-bottom:10px}
+.search-wrap:focus-within{border-color:var(--blue)}
+.search-input{flex:1;min-width:0;border:none;outline:none;background:none;color:var(--text);font-size:15px;padding:11px 0;font-family:inherit}
+.search-clear{display:none;width:22px;height:22px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:15px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0}
+mark.hit{background:var(--amber-light);color:inherit;border-radius:3px;padding:0 1px;font-weight:700}
+.search-info{font-size:12px;color:var(--text2);margin:-2px 2px 8px}
+/* ── + menu (expense / payment) ── */
+.addmenu-bg{position:absolute;inset:0;background:rgba(10,16,36,.45);z-index:44;display:none}
+.addmenu-bg.open{display:block}
+.addmenu{position:absolute;right:16px;bottom:calc(142px + env(safe-area-inset-bottom));z-index:45;display:none;flex-direction:column;gap:10px;align-items:flex-end}
+.addmenu.open{display:flex}
+.am-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 18px 10px 10px;box-shadow:var(--shadow-lg);cursor:pointer;min-width:230px;text-align:left;font-family:inherit}
+.am-item:active{transform:scale(.98)}
+.am-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--blue-light);flex-shrink:0}
+.am-t{font-size:15px;font-weight:700;color:var(--text)}
+.am-s{font-size:12px;color:var(--text2);margin-top:1px}
+.am-s.warn{color:var(--amber);font-weight:700}
+.am-s.good{color:var(--green);font-weight:700}
+.fab.open{transform:rotate(45deg);z-index:46}
+/* ── theme switch ── */
+.theme-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px}
+.theme-opt{padding:9px 4px;text-align:center;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--text2);border:none;background:none}
+.theme-opt.active{background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.drawer-switch{margin-left:auto;width:38px;height:22px;border-radius:12px;background:var(--border);position:relative;transition:background .15s;flex-shrink:0}
+.drawer-switch::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+:root[data-theme="dark"] .drawer-switch{background:var(--blue)}
+:root[data-theme="dark"] .drawer-switch::after{transform:translateX(16px)}
+/* ── side drawer ── */
+.drawer-bg{position:absolute;inset:0;background:rgba(10,16,36,.5);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.drawer-bg.open{opacity:1;pointer-events:auto}
+.drawer{position:absolute;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--surface);z-index:61;transform:translateX(-102%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.drawer.open{transform:none}
+.drawer-head{background:var(--grad);color:#fff;padding:calc(22px + env(safe-area-inset-top)) 18px 18px;border-radius:0 0 22px 0}
+.drawer-avatar{width:46px;height:46px;border-radius:50%;background:var(--hero-btn);border:2.5px solid var(--ring);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin-bottom:10px}
+.drawer-name{font-size:16px;font-weight:700}
+.drawer-sub{font-size:12px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drawer-list{flex:1;overflow-y:auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+.drawer-item{display:flex;align-items:center;gap:14px;width:100%;padding:12px;border:none;background:none;border-radius:var(--radius);font-size:15px;font-weight:500;color:var(--text);cursor:pointer;text-align:left}
+.drawer-item .di{width:26px;text-align:center;font-size:20px;color:var(--text2)}
+.drawer-item.active{background:var(--blue-light);color:var(--blue);font-weight:700}
+.drawer-item.active .di{color:var(--blue)}
+.drawer-sep{height:1px;background:var(--border);margin:8px 6px}
+.drawer-item.danger{color:var(--red)}
+/* ── split expense ── */
+.split-box{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin:-4px 0 14px}
+.split-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.split-title{font-size:12px;font-weight:600;color:var(--text2)}
+.split-reset{font-size:12px;color:var(--blue);cursor:pointer;font-weight:500;background:none;border:none}
+.split-row{display:flex;align-items:center;gap:8px;padding:5px 0}
+.split-name{flex:1;min-width:0;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split-pct{font-size:11px;color:var(--text3);width:38px;text-align:right}
+.split-input{width:96px;padding:7px 9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--surface);outline:none;text-align:right}
+.split-input:focus{border-color:var(--blue)}
+.split-input.manual{border-color:var(--amber)}
+.split-note{font-size:11px;margin-top:6px;color:var(--text2)}
+.split-note.err{color:var(--red)}
+.mem-card{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
+.mem-bar{height:5px;border-radius:3px;background:var(--surface2);margin-top:5px;overflow:hidden}
+.mem-bar>div{height:100%;background:var(--red);border-radius:3px}
+.mem-total{display:flex;justify-content:space-between;padding:6px 4px 0;font-size:13px;font-weight:700}
+/* ── cloud additions: splash, login, members ── */
+#splashScreen{background:var(--grad);color:#fff;align-items:center;justify-content:center;font-size:26px;font-weight:800;letter-spacing:.5px}
+#authScreen{background:var(--grad);align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.auth-logo{font-size:34px;font-weight:800;color:#fff;text-align:center;letter-spacing:.5px}
+.auth-tagline{font-size:13px;color:rgba(255,255,255,.75);text-align:center;margin:4px 0 20px}
+.auth-card{background:var(--surface);border-radius:16px;padding:20px;width:100%;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.auth-wrap{width:100%;max-width:380px;margin:auto}
+.auth-err{display:none;background:#fdecea;color:#b3261e;border:1px solid #f5c2be;border-radius:8px;padding:9px 11px;font-size:12.5px;margin-bottom:12px}
+.auth-warn{display:none;background:#fff4d6;color:#7a5a00;border:1px solid #f0d58a;border-radius:8px;padding:9px 11px;font-size:12px;margin-bottom:12px;line-height:1.4}
+.auth-divider{display:flex;align-items:center;gap:10px;color:var(--text3);font-size:12px;margin:14px 0}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px;font-weight:600;cursor:pointer}
+.link-btn{background:none;border:none;color:var(--blue);font-size:12.5px;cursor:pointer;margin-top:10px;width:100%;text-align:center}
+.btn:disabled,.btn-google:disabled{opacity:.6;cursor:not-allowed}
+.member-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.member-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue-light);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.member-name{font-size:14px;font-weight:600}
+.member-email{font-size:11px;color:var(--text2)}
+.member-role{font-size:11px;font-weight:600;color:var(--text2)}
+.shared-badge{background:var(--green-light);color:var(--green)}
+
+</style>
+<script>
+window.addEventListener('error',function(e){
+  var d=document.getElementById('fatalErr');
+  if(!d){d=document.createElement('div');d.id='fatalErr';d.style.cssText='position:fixed;left:8px;right:8px;top:8px;z-index:99999;background:#fee;border:1px solid #c00;color:#900;padding:10px;border-radius:8px;font:12px monospace;white-space:pre-wrap';document.body.appendChild(d);}
+  d.textContent='Error: '+(e.message||'unknown')+(e.lineno?' (line '+e.lineno+')':'');
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<noscript><div style="padding:24px;font:15px sans-serif">Please enable JavaScript to use Flyover.</div></noscript>
+<div id="app">
+
+<!-- ── SPLASH ── -->
+<div class="screen active" id="splashScreen">Flyover</div>
+
+<!-- ── LOGIN / REGISTER ── -->
+<div class="screen" id="authScreen">
+  <div class="auth-wrap">
+    <div class="auth-logo">Flyover</div>
+    <div class="auth-tagline">Smart cash book — track income &amp; expenses together</div>
+    <div class="auth-card">
+      <div class="auth-warn" id="fileWarn">⚠ You opened this as a local file. Sign-in needs a web address — run it from <b>localhost</b> or host it (GitHub Pages / Firebase Hosting).</div>
+      <div class="sub-tabs" style="margin-bottom:14px">
+        <div class="sub-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</div>
+        <div class="sub-tab" id="tabReg" onclick="switchAuthTab('register')">Register</div>
+      </div>
+      <div class="auth-err" id="authErr"></div>
+      <div class="form-group" id="nameGroup" style="display:none"><label class="form-label">Your name</label>
+        <input class="form-input" id="fName" maxlength="60" placeholder="Full name" autocomplete="name"/></div>
+      <div class="form-group"><label class="form-label">Email</label>
+        <input class="form-input" id="fEmail" type="email" placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="form-group"><label class="form-label">Password</label>
+        <input class="form-input" id="fPassword" type="password" placeholder="Min 6 characters" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleAuth()"/></div>
+      <button class="btn btn-primary" id="authSubmitBtn" onclick="handleAuth()">Sign In</button>
+      <button class="link-btn" onclick="forgotPassword()">Forgot password?</button>
+      <div class="auth-divider">or</div>
+      <button class="btn-google" id="googleBtn" onclick="handleGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.4 0-11.7-4.1-13.6-9.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+        Continue with Google</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="screen" id="mainScreen">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-left"><button class="hamburger" aria-label="Menu" onclick="openDrawer()"><span></span><span></span><span></span></button><div class="logo">Flyover</div></div>
+      <div class="header-right">
+        <div class="book-selector" onclick="openBooksSheet()">
+          <span class="book-icon" id="headerBookIcon">📒</span>
+          <span class="book-name" id="headerBookName">Loading…</span>
+          <span class="chevron">▾</span>
+        </div>
+        <div class="avatar" id="userAvatar" onclick="showPage('profile')">U</div>
+      </div>
+    </div>
+    <div class="month-scroll" id="monthScroll"></div>
+  </div>
+  <div class="offbar" id="offBar"></div>
+  <div class="page-scroll" id="pageContent"></div>
+  <div class="addmenu-bg" id="addMenuBg" onclick="closeAddMenu()"></div>
+  <div class="addmenu" id="addMenu"></div>
+  <button class="fab" id="fabBtn" onclick="onFabClick()">+</button>
+  <nav class="nav">
+    <button class="nav-btn active" id="navDashboard" onclick="showPage('dashboard')"><span class="nav-icon">⊞</span>Dashboard</button>
+    <button class="nav-btn" id="navTransactions" onclick="showPage('transactions')"><span class="nav-icon">≡</span>Entries</button>
+    <button class="nav-btn" id="navCategories" onclick="showPage('categories')"><span class="nav-icon">⊕</span>Categories</button>
+    <button class="nav-btn" id="navProfile" onclick="showPage('profile')"><span class="nav-icon">◎</span>Profile</button>
+  </nav>
+  <div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head"><div class="drawer-avatar" id="drawerAvatar">U</div><div class="drawer-name" id="drawerName"></div><div class="drawer-sub" id="drawerSub"></div></div>
+    <div class="drawer-list">
+      <button class="drawer-item" data-p="dashboard" onclick="drawerGo('dashboard')"><span class="di">⊞</span>Dashboard</button>
+      <button class="drawer-item" data-p="transactions" onclick="drawerGo('transactions')"><span class="di">≡</span>Entries</button>
+      <button class="drawer-item" data-p="categories" onclick="drawerGo('categories')"><span class="di">⊕</span>Categories</button>
+      <button class="drawer-item" data-p="profile" onclick="drawerGo('profile')"><span class="di">◎</span>Profile</button>
+      <div class="drawer-sep"></div>
+      <button class="drawer-item" onclick="toggleTheme()"><span class="di" id="themeIcon">🌙</span>Dark mode<span class="drawer-switch"></span></button>
+      <button class="drawer-item" onclick="closeDrawer();openBooksSheet()"><span class="di">📒</span>Switch / manage books</button>
+      <button class="drawer-item" onclick="closeDrawer();openShareSheet()"><span class="di">👥</span>Share / members</button>
+      <div class="drawer-sep"></div>
+      <button class="drawer-item danger" onclick="closeDrawer();confirmLogout()"><span class="di">⏻</span>Sign out</button>
+    </div>
+  </aside>
+</div>
+
+</div>
+
+<!-- ── BOTTOM SHEET ── -->
+<div class="sheet-bg" id="sheetBg" onclick="closeSheet(event)">
+  <div class="sheet" id="sheetContent" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div id="sheetInner"></div>
+  </div>
+</div>
+
+<div id="notifWrap"></div>
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script>
 // ═══════════════════════════════════════════════
-//  CONSTANTS & DEFAULTS
+//  Flyover — cash book with Firebase Auth + Firestore
+//  Data model:
+//    books/{bookId}                 name, emoji, ownerId, memberIds[], members{uid:{name,email,role}}, categories{expense[],income[]}
+//    books/{bookId}/txns/{txnId}    type, amount, category, date, remark, createdBy, createdByName, createdAt, splits{uid:amount} (expense in shared book)
+//  Roles: owner (everything) · editor (entries + categories) · viewer (read only)
 // ═══════════════════════════════════════════════
-const CAT_COLORS=['#185FA5','#1D9E75','#D85A30','#BA7517','#534AB7','#3B6D11','#993C1D','#D4537E','#0F6E56','#963C00','#2a7a8a','#7b3fa0'];
-const CAT_EMOJI={
-  'Entertainment':'🎬','Fast Food':'🍔','Grocery':'🛒','Home Improvement':'🏠',
-  'Travel':'✈️','Fuel':'⛽','Dress':'👗','Rent / Bills':'🏢',
-  'Salary':'💼','Freelance':'💻','Business':'📊','Investment':'📈',
-  'Medical':'💊','Education':'📚','Gift':'🎁','Other':'📦'
+const firebaseConfig={
+  apiKey:"AIzaSyB8vbTDDVSetdK7I_2YYIM8uyhdH0aAv4k",
+  authDomain:"flyover-111.firebaseapp.com",
+  projectId:"flyover-111",
+  storageBucket:"flyover-111.firebasestorage.app",
+  messagingSenderId:"980875659614",
+  appId:"1:980875659614:web:1417a07796555cd466e7cf"
 };
-// Expense Categories
-const DEFAULT_EXPENSE_CATS=[
-  'Entertainment',
-  'Fast Food',
-  'Grocery',
-  'Home Improvement',
-  'Travel',
-  'Fuel',
-  'Dress',
-  'Rent / Bills',
-  'Medical',
-  'Education',
-  'Gift',
-  'Other'
-];
 
-// Income Categories
-const DEFAULT_INCOME_CATS=[
-  'Salary Income',
-  'Business Income'
-];
+// ═══════════════════════════════════════════════
+//  CONSTANTS & HELPERS
+// ═══════════════════════════════════════════════
+const CAT_COLORS_LIGHT=['#185FA5','#1D9E75','#D85A30','#BA7517','#534AB7','#3B6D11','#993C1D','#D4537E','#0F6E56','#963C00','#2a7a8a','#7b3fa0'];
+const CAT_COLORS_DARK=['#3B82F6','#F45B78','#8BC34A','#FFB800','#7C83E0','#2FC4B2','#FF8A5B','#B36AE2','#5AA9E6','#E6849A','#A3D977','#F7D154'];
+function catPalette(){return document.documentElement.getAttribute('data-theme')==='dark'?CAT_COLORS_DARK:CAT_COLORS_LIGHT;}
+const CAT_EMOJI={'Shopping':'🛍️','Entertainment':'🎬','Fast Food':'🍔','Grocery':'🛒','Home Improvement':'🏠','Travel':'✈️','Fuel':'⛽','Dress':'👗','Rent / Bills':'🏢','Salary':'💼','Salary Income':'💼','Freelance':'💻','Business':'📊','Business Income':'📊','Investment':'📈','Medical':'💊','Education':'📚','Gift':'🎁','Other':'📦'};
+const DEFAULT_EXPENSE_CATS=['Entertainment','Fast Food','Grocery','Shopping','Home Improvement','Travel','Fuel','Dress','Rent / Bills','Medical','Education','Gift','Other'];
+const DEFAULT_INCOME_CATS=['Salary Income','Business Income'];
 const BOOK_EMOJIS=['📒','📓','📔','📕','📗','📘','📙','💼','🏦','🏪','🏠','✈️'];
+const BATCH=15; // Firestore rules allow ~20 access calls per batched write; each entry write uses one
 
-function catEmoji(n){return CAT_EMOJI[n]||n.charAt(0).toUpperCase();}
+const $=id=>document.getElementById(id);
+const defaultCats=()=>({expense:[...DEFAULT_EXPENSE_CATS],income:[...DEFAULT_INCOME_CATS],v:2});
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// custom categories get an icon too (same look as the default ones): guessed from the name, 🏷️ if nothing fits
+const CAT_GUESS=[[/shop|mall|store|amazon|flipkart/,'🛍️'],[/grocer|vegetable|fruit|milk|supermarket/,'🛒'],[/food|lunch|dinner|breakfast|restaurant|meal|snack|swiggy|zomato/,'🍽️'],[/coffee|tea|cafe/,'☕'],[/fuel|petrol|diesel/,'⛽'],[/bus|taxi|cab|uber|ola|auto|metro|train|transport/,'🚌'],[/travel|trip|flight|hotel|holiday|vacation/,'✈️'],[/phone|mobile|recharge|internet|wifi|broadband/,'📱'],[/electric|water|gas|light/,'💡'],[/rent|bill|maintenance/,'🏢'],[/school|tuition|college|course|book|study|fees/,'📚'],[/medic|doctor|hospital|health|pharma|clinic/,'💊'],[/gym|fitness|yoga|sport/,'🏋️'],[/pet|dog|cat\b/,'🐾'],[/kid|baby|toy|child/,'🧸'],[/insur/,'🛡️'],[/loan|emi|tax|interest paid|credit/,'🏦'],[/movie|film|cinema|game|music|netflix|party|fun/,'🎬'],[/cloth|dress|shirt|shoe|fashion/,'👗'],[/beauty|salon|spa|hair|cosmetic/,'💇'],[/repair|service|plumb|carpenter/,'🔧'],[/gift|wedding|birthday|festival/,'🎁'],[/donat|charity|temple/,'🤝'],[/subscription|membership/,'🔁'],[/salary|wages|pay\b/,'💼'],[/bonus|reward|cashback/,'🎉'],[/invest|dividend|stock|mutual/,'📈'],[/business|sales|profit/,'📊'],[/freelance|project|consult/,'💻']];
+function catEmoji(n){
+  if(CAT_EMOJI[n])return CAT_EMOJI[n];
+  const l=String(n).toLowerCase();
+  for(const [re,e] of CAT_GUESS)if(re.test(l))return e;
+  return '🏷️';
+}
 function fmt(n){return '₹'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
-function fmtSgn(n){return (n>=0?'+':'-')+'₹'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function fmtSgn(n){return (n>=0?'+':'-')+fmt(n);}
 function monthKey(d){return d.slice(0,7);}
 function monthLabel(m){const[y,mo]=m.split('-');return new Date(+y,+mo-1,1).toLocaleString('default',{month:'short',year:'numeric'});}
-function today(){return new Date().toISOString().slice(0,10);}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function initials(name){return String(name||'').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'U';}
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h);}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function nowISO(){return new Date().toISOString();}
 
 // ═══════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════
-let S={
-  user:null,
-  isGuest:false,
+let auth=null,db=null,FV=null;
+let U=null;                                   // signed-in user {uid,name,email}
+let S={books:[],currentBookId:null,transactions:[],payments:[]};   // cloud data (books = all mine, transactions = current book only)
+let V={month:today().slice(0,7),year:null,page:'dashboard',txnTab:'entries',catFilter:'all',who:'all',q:''};
+let unsubBooks=null,unsubTxns=null,unsubPays=null,txnsBookId=null;
+let booksLoaded=false,bootstrapping=false,pendingSelect=null,registerName='';
+const sync={books:false,txns:false};
 
-  books:[],
-  currentBookId:null,
+function currentBook(){return S.books.find(b=>b.id===S.currentBookId)||null;}
+function myRole(b){b=b||currentBook();return b&&b.members&&b.members[U.uid]?b.members[U.uid].role:null;}
+function canEdit(b){const r=myRole(b);return r==='owner'||r==='editor';}
+function isOwner(b){return !!b&&b.ownerId===U.uid;}
+function isShared(b){return !!b&&b.memberIds.length>1;}
+function roleLabel(r){return r==='owner'?'👑 Owner':r==='editor'?'✏️ Editor':'👁 Viewer';}
+const bookRef=id=>db.collection('books').doc(id);
+const txCol=id=>bookRef(id).collection('txns');
+const payCol=id=>bookRef(id).collection('payments');
 
-  transactions:[],
-
-  categories:{},
-
-  currentMonth:today().slice(0,7),
-  currentPage:'dashboard'
-};
-
-// ═══════════════════════════════════════════════
-//  PERSISTENCE (localStorage = device backup)
-// ═══════════════════════════════════════════════
-function save(){
-  try{localStorage.setItem('fp_v2',JSON.stringify(S));}catch(e){}
+function dbErr(e){
+  console.error(e);
+  const c=(e&&e.code)||'';
+  toast(c==='permission-denied'||c==='firestore/permission-denied'?'Permission denied — check Firestore rules or your role in this book'
+    :c==='unavailable'?'You appear to be offline — changes will sync later'
+    :'Error: '+((e&&e.message)||c||'unknown'),3800);
 }
-function load(){
+let persistState='pending';
+function initFirebase(){
   try{
-    const raw=localStorage.getItem('fp_v2');
-    if(raw){const d=JSON.parse(raw);Object.assign(S,d);}
-  }catch(e){}
+    if(typeof firebase==='undefined')return false;
+    firebase.initializeApp(firebaseConfig);
+    auth=firebase.auth();db=firebase.firestore();FV=firebase.firestore.FieldValue;
+    try{db.settings({experimentalAutoDetectLongPolling:true,merge:true});}catch(e){console.warn(e);}   // WebViews often break the default streaming connection
+    db.enablePersistence({synchronizeTabs:true}).then(()=>{persistState='on';}).catch(e=>{persistState='off';console.warn('Offline storage unavailable',e&&e.code);});   // offline cache
+    return true;
+  }catch(e){console.error(e);return false;}
 }
 
 // ═══════════════════════════════════════════════
-//  AUTH (local accounts stored in localStorage)
-//  In a real app, swap this for Firebase/Supabase
+//  AUTH
 // ═══════════════════════════════════════════════
 let authMode='login';
-// Track whether user explicitly signed out (prevents ghost re-login)
-let _userExplicitlySignedOut = localStorage.getItem('fp_signed_out') === '1';
+function showScreen(id){['splashScreen','authScreen','mainScreen'].forEach(s=>$(s).classList.toggle('active',s===id));}
+function authErr(msg){const e=$('authErr');e.textContent=msg||'';e.style.display=msg?'block':'none';}
+function authBusy(b){['authSubmitBtn','googleBtn'].forEach(i=>{const el=$(i);if(el)el.disabled=b;});}
 function switchAuthTab(m){
   authMode=m;
-  document.getElementById('tabLogin').classList.toggle('active',m==='login');
-  document.getElementById('tabReg').classList.toggle('active',m==='register');
-  document.getElementById('nameGroup').style.display=m==='register'?'block':'none';
-  document.getElementById('authSubmitBtn').textContent=m==='login'?'Sign In':'Create Account';
-  document.getElementById('authErr').style.display='none';
+  $('tabLogin').classList.toggle('active',m==='login');
+  $('tabReg').classList.toggle('active',m==='register');
+  $('nameGroup').style.display=m==='register'?'block':'none';
+  $('authSubmitBtn').textContent=m==='login'?'Sign In':'Create Account';
+  $('fPassword').autocomplete=m==='login'?'current-password':'new-password';
+  authErr('');
 }
-
-function getUsers(){
-  try{return JSON.parse(localStorage.getItem('fp_users')||'[]');}catch{return [];}
+function authMsg(e){
+  const c=(e&&e.code)||'';
+  return {'auth/user-not-found':'No account found with this email.','auth/invalid-credential':'Incorrect email or password.','auth/wrong-password':'Incorrect password.',
+    'auth/too-many-requests':'Too many attempts. Please wait a moment.','auth/email-already-in-use':'Email already registered. Please sign in.',
+    'auth/weak-password':'Password must be at least 6 characters.','auth/network-request-failed':'No internet connection.','auth/invalid-email':'Invalid email address.',
+    'auth/operation-not-allowed':'This sign-in method is not enabled in Firebase Console → Authentication.','auth/unauthorized-domain':'This domain is not authorised. Add it in Firebase Console → Authentication → Settings → Authorised domains.',
+    'auth/operation-not-supported-in-this-environment':'Sign-in needs http(s). Open the app from a web server (e.g. localhost or GitHub Pages), not as a file.'}[c]
+    ||(e&&e.message)||'Something went wrong. Please try again.';
 }
-function saveUsers(u){localStorage.setItem('fp_users',JSON.stringify(u));}
-
-function hashPassword(v){ let h=0; for(let i=0;i<v.length;i++){ h=((h<<5)-h)+v.charCodeAt(i); h|=0;} return 'h'+Math.abs(h); }
 function handleAuth(){
-  const email=document.getElementById('fEmail').value.trim().toLowerCase();
-  const pass=document.getElementById('fPassword').value;
-  const name=document.getElementById('fName').value.trim();
-  const err=document.getElementById('authErr');
-  err.style.display='none';
-  if(!email||!pass){err.textContent='Please fill in all fields.';err.style.display='block';return;}
-  const users=getUsers();
+  if(!auth){authErr('Could not load Firebase. Check your internet connection and reload.');return;}
+  const email=$('fEmail').value.trim(),pass=$('fPassword').value,name=$('fName').value.trim();
+  authErr('');
+  if(!email||!pass){authErr('Please fill in all fields.');return;}
+  if(authMode==='register'&&!name){authErr('Please enter your name.');return;}
+  authBusy(true);
+  let p;
   if(authMode==='register'){
-    if(!name){err.textContent='Please enter your name.';err.style.display='block';return;}
-    if(users.find(u=>u.email===email)){err.textContent='Email already registered.';err.style.display='block';return;}
-    if(pass.length<6){err.textContent='Password must be at least 6 characters.';err.style.display='block';return;}
-    const user={id:uid(),email,name,password:hashPassword(pass),initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()};
-    users.push(user);saveUsers(users);
-    loginUser(user);
-  } else {
-    const user=users.find(u=>u.email===email&&u.password===hashPassword(pass));
-    if(!user){err.textContent='Invalid email or password.';err.style.display='block';return;}
-    loginUser(user);
-  }
+    registerName=name;
+    p=auth.createUserWithEmailAndPassword(email,pass).then(c=>c.user.updateProfile({displayName:name}).then(()=>{if(U){U.name=name;refreshHeader();}}));
+  }else p=auth.signInWithEmailAndPassword(email,pass);
+  p.catch(e=>authErr(authMsg(e))).then(()=>authBusy(false));
 }
-
-function handleGoogleAuth(){
-  // Simulate Google OAuth — in prod, integrate Firebase Auth
-  const email=prompt('Enter your Gmail address:','');
-  if(!email||!email.includes('@'))return;
-  const users=getUsers();
-  let user=users.find(u=>u.email===email.toLowerCase());
-  if(!user){
-    const name=email.split('@')[0];
-    user={id:uid(),email:email.toLowerCase(),name,password:'',initials:name.slice(0,2).toUpperCase(),google:true};
-    users.push(user);saveUsers(users);
-  }
-  loginUser(user);
-}
-
-function loginUser(user){
-  // Clear explicit sign-out flag — user is now intentionally logging in
-  localStorage.removeItem('fp_signed_out');
-  _userExplicitlySignedOut=false;
-  // Write presence to Firebase so other devices can detect
-  if(window.db && user.id){
-    const sessionId=uid();
-    localStorage.setItem('fp_session_'+user.id, sessionId);
-    try{
-      window.dbSet(window.dbRef(window.db,'presence/'+user.id),{
-        sessionId,
-        device:navigator.userAgent.slice(0,60),
-        loginAt:new Date().toISOString()
-      });
-    }catch(e){}
-  }
-  // Load local cache — Firebase data (loaded by the caller before loginUser) takes priority,
-  // so only use the local cache if S has no books yet (i.e. Firebase didn't load anything).
-  if(!S.books || !S.books.length){
-    const cacheKeys=['fp_cache_'+user.id, 'fp_data_'+user.id];
-    for(const key of cacheKeys){
-      try{
-        const raw=localStorage.getItem(key);
-        if(raw){const d=JSON.parse(raw); Object.assign(S,d); break;}
-      }catch{}
-    }
-  }
-  S.user={id:user.id,name:user.name,email:user.email,initials:user.initials||'U'};
-  // Ensure default book exists
-  if(!S.books||!S.books.length){
-    const book={id:uid(),name:'My Book',emoji:'📒',ownerId:user.id,members:[{userId:user.id,email:user.email,name:user.name,role:'owner'}]};
-    S.books=[book];
-    S.currentBookId=book.id;
-S.categories[book.id]={
-  expense:[...DEFAULT_EXPENSE_CATS],
-  income:[...DEFAULT_INCOME_CATS]
-};
-    S.transactions=S.transactions||[];
-  }
-  if(!S.currentBookId)S.currentBookId=S.books[0].id;
-  save();
-  document.getElementById('authScreen').classList.remove('active');
-  document.getElementById('mainScreen').classList.add('active');
-  document.getElementById('userAvatar').textContent=S.user.initials;
-  document.getElementById('headerBookName').textContent=currentBook().name;
-  document.getElementById('headerBookIcon').textContent=currentBook().emoji;
-  // Load shared book data from Firebase, then attach realtime listener
-  loadSharedBooksThenRender();
-  toast('Welcome back, '+S.user.name.split(' ')[0]+'! 👋');
-}
-
-async function loadSharedBooksThenRender(){
-  if(!window.db) { renderMonthTabs();showPage('dashboard'); return; }
-  
-  // BUG FIX #1: Load books where user is invited but not yet in S.books
-  try{
-    const snap=await window.dbGet(window.dbRef(window.db,'expenseData/'+S.user.id));
-    if(snap.exists()){
-      const booksFromDB=(snap.val().books||[]);
-      for(const b of booksFromDB){
-        if(!S.books.find(sb=>sb.id===b.id)){
-          S.books.push(b);
-          // Initialize categories if missing
-          if(!S.categories[b.id]){
-            S.categories[b.id]={
-              expense:[...DEFAULT_EXPENSE_CATS],
-              income:[...DEFAULT_INCOME_CATS]
-            };
-          }
-        }
-      }
-    }
-  }catch(e){console.log('Error loading invited books:',e);}
-  
-  // Load all shared books this user is a member of
-  const sharedBooks=S.books.filter(b=>isSharedBook(b.id));
-  for(const b of sharedBooks){
-    try{
-      const snap=await window.dbGet(window.dbRef(window.db,'sharedBooks/'+b.id));
-      if(snap.exists()){
-        const data=snap.val();
-        if(data.transactions){
-          S.transactions=S.transactions.filter(t=>t.bookId!==b.id);
-          const remoteTxns=Array.isArray(data.transactions)?data.transactions:Object.values(data.transactions);
-          S.transactions.push(...remoteTxns.filter(t=>t&&t.id));
-        }
-        if(data.categories) S.categories[b.id]=data.categories;
-        if(data.meta) Object.assign(b, data.meta);
-      }
-    }catch(e){console.log('load shared book error:',e);}
-  }
-  renderMonthTabs();showPage('dashboard');
-  // Attach live listener to current book if shared
-  attachSharedBookListener(S.currentBookId);
-  // Monitor for other device sessions
-  watchPresence();
-}
-
-let _presenceListener=null;
-function watchPresence(){
-  if(!window.db||!S.user||!window.dbOnValue) return;
-  const mySession=localStorage.getItem('fp_session_'+S.user.id)||'';
-  const presRef=window.dbRef(window.db,'presence/'+S.user.id);
-  _presenceListener=window.dbOnValue(presRef,snap=>{
-    if(!snap.exists()) return;
-    const data=snap.val();
-    // If a different session is active and we are on main screen
-    if(data.sessionId && data.sessionId!==mySession && document.getElementById('mainScreen').classList.contains('active')){
-      // Show non-blocking notice (don't force logout — Firebase allows multi-device)
-      if(!document.getElementById('multiDeviceBanner')){
-        const banner=document.createElement('div');
-        banner.id='multiDeviceBanner';
-        banner.innerHTML=`<div style="position:fixed;top:0;left:0;right:0;background:#f59e0b;color:#000;font-size:12px;font-weight:600;padding:8px 16px;z-index:9999;display:flex;justify-content:space-between;align-items:center">
-          <span>⚠️ This account signed in on another device</span>
-          <button onclick="document.getElementById('multiDeviceBanner').remove()" style="background:none;border:none;cursor:pointer;font-size:16px;font-weight:700">×</button>
-        </div>`;
-        document.body.prepend(banner);
-        setTimeout(()=>{const b=document.getElementById('multiDeviceBanner');if(b)b.remove();},5000);
-      }
-    }
+function handleGoogle(){
+  if(!auth){authErr('Could not load Firebase. Check your internet connection and reload.');return;}
+  authErr('');
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{
+    if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request')authErr(authMsg(e));
   });
 }
-
-
-  
-function continueAsGuest(){
-  S.isGuest=true;
-  if(!S.books || !S.books.length){
-    const guestBook={id:'guest-book',name:'Demo Book',emoji:'📒',ownerId:'guest',members:[]};
-    S.books=[guestBook];
-    S.currentBookId=guestBook.id;
-    S.categories[guestBook.id]={expense:[...DEFAULT_EXPENSE_CATS],income:[...DEFAULT_INCOME_CATS]};
-    S.transactions=[];
-  }
-  document.getElementById('authScreen').classList.remove('active');
-  document.getElementById('mainScreen').classList.add('active');
-  document.getElementById('userAvatar').textContent='👁';
-  document.getElementById('headerBookName').textContent='Guest Mode';
-  document.getElementById('headerBookIcon').textContent='👀';
-  renderMonthTabs();showPage('dashboard');
-  toast('Guest Mode — View Only');
+function forgotPassword(){
+  const email=$('fEmail').value.trim();
+  if(!email){authErr('Enter your email above first.');return;}
+  auth.sendPasswordResetEmail(email).then(()=>{authErr('');toast('Password reset email sent ✓',3500);}).catch(e=>authErr(authMsg(e)));
 }
-function requireLogin(){ if(S.isGuest){ toast('Please login to continue'); return false;} return true; }
+function confirmLogout(){if(confirm('Sign out of Flyover?'))auth.signOut().catch(dbErr);}
 
-function logout(){
-  S.isGuest=false;
-  detachSharedBookListener();
-  saveUserData();
-  // Mark explicit sign-out to prevent Firebase auth listener from re-logging in
-  localStorage.setItem('fp_signed_out','1');
-  _userExplicitlySignedOut=true;
-  // Sign out from Firebase
-  if(window.signOutFirebase && window.auth){
-    window.signOutFirebase(window.auth).catch(e=>{});
-  }
-  S={
-    user:null,
-    isGuest:false,
-    books:[],
-    currentBookId:null,
-    transactions:[],
-    categories:{},
-    currentMonth:today().slice(0,7),
-    currentPage:'dashboard'
-  };
-  document.getElementById('mainScreen').classList.remove('active');
-  document.getElementById('authScreen').classList.add('active');
+function onSignedIn(user){
+  if(U&&U.uid===user.uid)return;
+  teardown();
+  U={uid:user.uid,name:user.displayName||registerName||(user.email||'').split('@')[0]||'User',email:user.email||''};
+  S={books:[],currentBookId:null,transactions:[],payments:[]};
+  booksLoaded=false;V.page='dashboard';V.catFilter='all';V.who='all';V.q='';V.txnTab='entries';
+  showScreen('mainScreen');
+  showPage('dashboard');
+  unsubBooks=db.collection('books').where('memberIds','array-contains',U.uid).onSnapshot(handleBooksSnap,dbErr);
+  syncEmailIndex();
+}
+// Lets an owner look someone up by email to invite them — the client can't query Firebase Auth
+// directly, so each user maintains their own /emailIndex/{email} doc (doc ID = their own lowercased
+// email, so the security rules can let anyone GET one entry by ID without permitting a full LIST/scan).
+function syncEmailIndex(){
+  const email=(U.email||'').trim().toLowerCase();
+  if(!email)return;
+  db.collection('emailIndex').doc(email).set({uid:U.uid,name:U.name,email:U.email},{merge:true})
+    .catch(e=>console.warn('emailIndex sync failed (invites by email need updated Firestore rules):',e));
+}
+function onSignedOut(){
+  teardown();U=null;registerName='';
+  S={books:[],currentBookId:null,transactions:[],payments:[]};
   closeSheetNow();
+  $('fPassword').value='';
+  showScreen('authScreen');
 }
-function guestBlocked(){
+function teardown(){
+  if(unsubBooks){unsubBooks();unsubBooks=null;}
+  if(unsubTxns){unsubTxns();unsubTxns=null;}
+  if(unsubPays){unsubPays();unsubPays=null;}
+  txnsBookId=null;bootstrapping=false;pendingSelect=null;sync.books=sync.txns=false;
+}
 
-  if(S.isGuest){
-    toast('Please login to continue');
-    return true;
+// ═══════════════════════════════════════════════
+//  CLOUD SYNC
+// ═══════════════════════════════════════════════
+function bookFromDoc(d){
+  const x=d.data()||{},c=x.categories||{};
+  return{id:d.id,name:String(x.name||'Book'),emoji:x.emoji||'📒',ownerId:x.ownerId,
+    memberIds:Array.isArray(x.memberIds)?x.memberIds:[],members:x.members||{},createdAt:x.createdAt||'',
+    categories:{expense:Array.isArray(c.expense)?c.expense.map(String):[...DEFAULT_EXPENSE_CATS],
+                income:Array.isArray(c.income)?c.income.map(String):[...DEFAULT_INCOME_CATS],v:Number(c.v)||0}};
+}
+function cleanSplits(sp){
+  if(!sp||typeof sp!=='object')return null;
+  const o={};let n=0;
+  Object.keys(sp).forEach(k=>{const v=Number(sp[k]);if(Number.isFinite(v)&&v>=0){o[k]=v;n++;}});
+  return n?o:null;
+}
+function cleanTxn(id,bookId,t){
+  if(!t||(t.type!=='income'&&t.type!=='expense'))return null;
+  const amount=Number(t.amount);
+  if(!Number.isFinite(amount)||amount<=0||typeof t.date!=='string'||!/^\d{4}-\d{2}-\d{2}/.test(t.date))return null;
+  return{id,bookId,type:t.type,amount,category:String(t.category||'Other').slice(0,80),date:t.date.slice(0,10),
+    remark:t.remark?String(t.remark).slice(0,500):'',splits:cleanSplits(t.splits),createdBy:t.createdBy||'',createdByName:t.createdByName||'',createdAt:t.createdAt||''};
+}
+
+function handleBooksSnap(snap){
+  booksLoaded=true;
+  sync.books=snap.metadata.hasPendingWrites;
+  const prev=S.currentBookId;
+  S.books=snap.docs.map(bookFromDoc).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  // Only bootstrap once the SERVER confirmed there are no books (never from an empty offline cache)
+  if(!S.books.length&&!snap.metadata.fromCache)bootstrap();
+  let cur=prev;
+  if(pendingSelect&&S.books.some(b=>b.id===pendingSelect)){cur=pendingSelect;pendingSelect=null;}
+  if(!cur||!S.books.some(b=>b.id===cur)){
+    if(prev&&!S.books.some(b=>b.id===prev)&&S.books.length)toast('That book is no longer available');
+    const saved=lsGet('flyover_cur_'+U.uid);
+    cur=S.books.some(b=>b.id===saved)?saved:(S.books[0]?S.books[0].id:null);
   }
-
-  return false;
+  S.currentBookId=cur;
+  if(cur)lsSet('flyover_cur_'+U.uid,cur);
+  attachTxns(cur);
+  renderAll();
+  if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites)S.books.forEach(migrateCats);
 }
-// saveUserData is defined near the bottom of this file (Firebase version).
-// Do NOT add a second definition here — it would shadow the Firebase one.
+// existing books get the new default "Shopping" category once (only from server data, so a stale offline copy never overwrites newer categories)
+const _catMig=new Set();
+function migrateCats(b){
+  if(!b.categories||b.categories.v>=2||_catMig.has(b.id))return;
+  const r=b.members[U.uid]&&b.members[U.uid].role;if(r!=='owner'&&r!=='editor')return;
+  _catMig.add(b.id);
+  const cats=cloneCats(b);
+  if(!cats.expense.some(x=>x.toLowerCase()==='shopping')){
+    const g=cats.expense.indexOf('Grocery'),o=cats.expense.indexOf('Other');
+    if(g>=0)cats.expense.splice(g+1,0,'Shopping');else if(o>=0)cats.expense.splice(o,0,'Shopping');else cats.expense.push('Shopping');
+  }
+  cats.v=2;saveCats(b.id,cats);
+}
+// ── CHANGE NOTIFICATIONS: popup when another member adds / edits / deletes an entry or records a payment ──
+// Works while the app is open (live Firestore listeners). Catch-up data after being away is ignored (only changes made in the last 10 min pop up).
+let _nf={t:false,p:false},_nfMute=0;const _myDel=new Set();
+function notifOn(){return lsGet('flyover_notif')!=='off';}
+function setNotifOn(v){lsSet('flyover_notif',v?'on':'off');toast(v?'Notifications on':'Notifications off');}
+function recentTs(iso){const t=Date.parse(iso);return Number.isFinite(t)&&Math.abs(Date.now()-t)<10*60*1000;}
+function whoName(uid,fallback){const b=currentBook(),m=b&&b.members[uid];return String((m&&(m.name||m.email))||fallback||'Someone').split(' ')[0];}
+function txnEvent(type,d,id){
+  const amt=Number(d.amount);if(!Number.isFinite(amt))return null;
+  const cat=String(d.category||'Entry'),line=catEmoji(cat)+' '+cat+' · '+fmt(amt)+(d.remark?' · '+String(d.remark).slice(0,40):'');
+  if(type==='added'){
+    if(d.createdBy===U.uid||!recentTs(d.createdAt))return null;
+    const sp=d.splits&&Number(d.splits[U.uid]),extra=(d.type==='expense'&&sp>0)?' · Your share '+fmt(sp):'';
+    return{icon:d.type==='income'?'⬆️':'🧾',title:whoName(d.createdBy,d.createdByName)+' added '+(d.type==='income'?'an income':'an expense'),body:line+extra,page:'transactions',uid:d.createdBy};
+  }
+  if(type==='modified'){
+    if(!d.updatedBy||d.updatedBy===U.uid||!recentTs(d.updatedAt))return null;
+    return{icon:'✏️',title:whoName(d.updatedBy,d.updatedByName)+' edited an entry',body:line,page:'transactions',uid:d.updatedBy};
+  }
+  if(type==='removed'){
+    if(_myDel.has(id)||Date.now()<_nfMute)return null;
+    return{icon:'🗑️',title:'An entry was deleted',body:line,page:'transactions'};
+  }
+  return null;
+}
+function payEvent(type,d,id){
+  const amt=Number(d.amount);if(!Number.isFinite(amt)||typeof d.from!=='string'||typeof d.to!=='string')return null;
+  const a=whoName(d.from),c=whoName(d.to);
+  if(type==='added'){
+    if(!recentTs(d.createdAt))return null;
+    if(d.to===U.uid)return{icon:'💸',title:a+' paid you '+fmt(amt),body:Number(d.extra)>0?fmt(Number(d.extra))+' added to your income':'Payment recorded',page:'dashboard',uid:d.from};
+    if(d.from===U.uid)return{icon:'💸',title:c+' recorded your payment',body:'You paid '+c+' '+fmt(amt),page:'dashboard',uid:d.to};
+    return{icon:'💸',title:a+' paid '+c+' '+fmt(amt),body:'Payment recorded',page:'dashboard',uid:d.from};
+  }
+  if(type==='removed'){
+    if(_myDel.has(id)||Date.now()<_nfMute)return null;
+    return{icon:'🗑️',title:'A payment was deleted',body:a+' → '+c+' '+fmt(amt),page:'dashboard'};
+  }
+  return null;
+}
+function handleNotif(kind,snap){
+  if(snap.metadata.fromCache)return;                 // cached/offline snapshot
+  if(!_nf[kind]){_nf[kind]=true;return;}             // first server snapshot = initial load, stay silent
+  const b=currentBook();if(!b||!isShared(b)||!notifOn())return;
+  const ev=[];
+  snap.docChanges().forEach(ch=>{
+    if(ch.doc.metadata.hasPendingWrites)return;       // my own change, not yet confirmed
+    const e=(kind==='t'?txnEvent:payEvent)(ch.type,ch.doc.data()||{},ch.doc.id);
+    if(e)ev.push(e);
+  });
+  if(!ev.length)return;
+  if(ev.length>3){pushNotif({icon:'🔔',title:ev.length+' changes by others',body:'Tap to review',page:ev.some(e=>e.page==='transactions')?'transactions':'dashboard'});return;}
+  ev.forEach(pushNotif);
+}
+function pushNotif(e){
+  const w=$('notifWrap');if(!w)return;
+  const el=document.createElement('div');el.className='notif';
+  el.style.borderLeftColor=e.uid?memColor(e.uid):'var(--blue)';
+  el.innerHTML=`<div class="notif-ic">${e.icon||'🔔'}</div><div style="min-width:0;flex:1"><div class="notif-t">${esc(e.title)}</div><div class="notif-b">${esc(e.body||'')}</div></div><button class="notif-x" aria-label="Dismiss">×</button>`;
+  const close=()=>{el.classList.add('out');setTimeout(()=>el.remove(),220);};
+  el.onclick=ev=>{if(!ev.target.classList.contains('notif-x')&&e.page&&U&&currentBook())showPage(e.page);close();};
+  w.appendChild(el);
+  while(w.children.length>3)w.firstChild.remove();
+  try{if(navigator.vibrate)navigator.vibrate(60);}catch(_){}
+  setTimeout(close,7000);
+}
+function attachTxns(bookId){
+  if(txnsBookId===bookId&&unsubTxns)return;
+  if(unsubTxns){unsubTxns();unsubTxns=null;}
+  if(unsubPays){unsubPays();unsubPays=null;}
+  txnsBookId=bookId;S.transactions=[];S.payments=[];sync.txns=false;
+  if(!bookId)return;
+  _nf={t:false,p:false};
+  unsubPays=payCol(bookId).onSnapshot(snap=>{
+    handleNotif('p',snap);
+    S.payments=snap.docs.map(d=>cleanPay(d.id,d.data())).filter(Boolean);
+    renderAll();if(_paySheet&&$('sheetBg').classList.contains('open'))renderPaySheet();
+  },dbErr);
+  unsubTxns=txCol(bookId).onSnapshot(snap=>{
+    handleNotif('t',snap);
+    sync.txns=snap.metadata.hasPendingWrites;
+    S.transactions=snap.docs.map(d=>cleanTxn(d.id,bookId,d.data())).filter(Boolean);
+    renderAll();
+  },dbErr);
+}
+
+function runChunks(items,fn){
+  const jobs=[];
+  for(let i=0;i<items.length;i+=BATCH){
+    const b=db.batch();items.slice(i,i+BATCH).forEach(x=>fn(b,x));jobs.push(b.commit());
+  }
+  return Promise.all(jobs);
+}
+function newBookData(name,emoji,cats){
+  return{name,emoji,ownerId:U.uid,memberIds:[U.uid],members:{[U.uid]:{name:U.name,email:U.email,role:'owner'}},
+    categories:cats||defaultCats(),createdAt:nowISO()};
+}
+
+// ── First sign-in: import this device's old local data, or start with an empty book ──
+function readLocal(){
+  let d=null;
+  try{d=JSON.parse(lsGet('flyover_v1')||'null');}catch(e){}
+  if(!d||!Array.isArray(d.books)){
+    let best=null,score=-1;
+    try{for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k||!(k==='fp_v2'||k.startsWith('fp_cache_')||k.startsWith('fp_data_')))continue;
+      try{const x=JSON.parse(localStorage.getItem(k));
+        if(x&&Array.isArray(x.books)){const sc=(x.transactions||[]).length*1000+x.books.length;if(sc>score){best=x;score=sc;}}}catch(e){}
+    }}catch(e){}
+    d=best;
+  }
+  if(!d)return null;
+  const books=(d.books||[]).filter(b=>b&&b.id).map(b=>({id:String(b.id),name:String(b.name||'My Book').slice(0,60),emoji:b.emoji||'📒'}));
+  const ids=new Set(books.map(b=>b.id));
+  const txns=(d.transactions||[]).filter(t=>t&&ids.has(t.bookId)).map(t=>cleanTxn(String(t.id||''),t.bookId,t)).filter(Boolean);
+  return{books,txns,categories:d.categories||{},currentBookId:d.currentBookId};
+}
+function bootstrap(){
+  if(bootstrapping)return;
+  bootstrapping=true;
+  const local=readLocal();
+  const worth=local&&(local.txns.length>0||local.books.length>1);
+  if(worth&&!lsGet('flyover_imported')&&confirm('Import the '+local.txns.length+' entries saved on this device into your account?')){
+    lsSet('flyover_imported',U.uid);toast('Importing…');
+    importLocal(local).then(()=>toast('Imported ✓')).catch(e=>{try{localStorage.removeItem('flyover_imported');}catch(_){}dbErr(e);}).then(()=>{bootstrapping=false;});
+  }else{
+    bookRef(db.collection('books').doc().id).set(newBookData('My Book','📒')).catch(dbErr).then(()=>{bootstrapping=false;});
+  }
+}
+function importLocal(local){
+  // Writes from one client are applied in order, so the book is created before its entries — no need to wait between steps
+  const jobs=[];
+  local.books.forEach(lb=>{
+    const ref=db.collection('books').doc(),c=local.categories[lb.id]||{};
+    jobs.push(ref.set(newBookData(lb.name,lb.emoji,{
+      expense:Array.isArray(c.expense)?c.expense.map(String):[...DEFAULT_EXPENSE_CATS],
+      income:Array.isArray(c.income)?c.income.map(String):[...DEFAULT_INCOME_CATS]})));
+    if(lb.id===local.currentBookId)pendingSelect=ref.id;
+    jobs.push(runChunks(local.txns.filter(t=>t.bookId===lb.id),(b,t)=>b.set(ref.collection('txns').doc(),{
+      type:t.type,amount:t.amount,category:t.category,date:t.date,remark:t.remark,
+      createdBy:U.uid,createdByName:U.name,createdAt:t.createdAt||nowISO()})));
+  });
+  return Promise.all(jobs);
+}
 
 // ═══════════════════════════════════════════════
 //  BOOKS
 // ═══════════════════════════════════════════════
-function currentBook(){return S.books.find(b=>b.id===S.currentBookId)||S.books[0];}
-
-// ── SHARED BOOK SYNC ────────────────────────────────────────────────
-// Shared books store transactions+categories at sharedBooks/{bookId}/
-// Personal books stay at expenseData/{uid} as before.
-// A book is "shared" if it has >1 member OR the current user is not the owner.
-
-function isSharedBook(bookId){
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b) return false;
-  return b.shared===true || (b.members && b.members.length > 1);
-}
-
-let _sharedBookListener=null;  // active Firebase onValue unsubscribe fn
-let _listenedBookId=null;
-
-function attachSharedBookListener(bookId){
-  if(!window.db || !window.dbOnValue) return;
-  // Detach previous listener
-  detachSharedBookListener();
-  if(!isSharedBook(bookId)) return;
-  _listenedBookId=bookId;
-  const path=window.dbRef(window.db,'sharedBooks/'+bookId);
-  _sharedBookListener=window.dbOnValue(path, snap=>{
-    if(!snap.exists()) return;
-    const data=snap.val();
-    // Check for deletion tombstone
-    if(data.deleted===true){
-      detachSharedBookListener();
-      _removeBookLocally(bookId);
-      toast('📕 A shared book was deleted by its owner');
-      if(document.getElementById('mainScreen').classList.contains('active')){
-        renderMonthTabs();renderPage();
-      }
-      return;
-    }
-    // Merge transactions for this book from remote
-    if(data.transactions){
-      // Remove local txns for this book, replace with remote
-      S.transactions=S.transactions.filter(t=>t.bookId!==bookId);
-      const remoteTxns=Array.isArray(data.transactions)
-        ? data.transactions
-        : Object.values(data.transactions);
-      S.transactions.push(...remoteTxns.filter(t=>t && t.id));
-    }
-    // Merge categories
-    if(data.categories){
-      S.categories[bookId]=data.categories;
-    }
-    // Merge book metadata (name/emoji/members)
-    if(data.meta){
-      const bi=S.books.findIndex(bk=>bk.id===bookId);
-      if(bi>=0) Object.assign(S.books[bi], data.meta);
-    }
-    // Re-render if this is the active book
-    if(S.currentBookId===bookId){
-      renderMonthTabs();renderPage();
-    }
-    // Persist locally (cache)
-    if(S.user) localStorage.setItem('fp_cache_'+S.user.id, JSON.stringify({
-      books:S.books,currentBookId:S.currentBookId,
-      transactions:S.transactions,categories:S.categories,currentMonth:S.currentMonth
-    }));
-  });
-}
-
-function detachSharedBookListener(){
-  if(_sharedBookListener){
-    try{_sharedBookListener();}catch(e){}  // onValue returns unsubscribe fn
-    _sharedBookListener=null;
-    _listenedBookId=null;
-  }
-}
-
-async function saveSharedBookData(bookId){
-  if(!window.db) return;
-  showSyncIndicator('syncing');
-  const txns=S.transactions.filter(t=>t.bookId===bookId);
-  const cats=S.categories[bookId]||{expense:[...DEFAULT_EXPENSE_CATS],income:[...DEFAULT_INCOME_CATS]};
-  const b=S.books.find(bk=>bk.id===bookId);
-  const meta=b?{name:b.name,emoji:b.emoji,members:b.members,ownerId:b.ownerId}:{};
-  try{
-    await window.dbSet(window.dbRef(window.db,'sharedBooks/'+bookId),{
-      transactions:txns,
-      categories:cats,
-      meta
-    });
-    // Also write bookIndex for discoverability
-    await window.dbSet(window.dbRef(window.db,'bookIndex/'+bookId),{ownerId:b?b.ownerId:''});
-    showSyncIndicator('synced');
-  }catch(e){
-    console.log('sharedBook save error:',e);
-    showSyncIndicator('error');
-  }
-}
-function bookTxns(bookId,month){return S.transactions.filter(t=>t.bookId===bookId&&t.date.startsWith(month));}
 function bookCats(bookId,type){
-
-  if(!S.categories){
-    S.categories={};
-  }
-
-  if(!S.categories[bookId]){
-
-    S.categories[bookId]={
-      expense:[
-        ...DEFAULT_EXPENSE_CATS
-      ],
-      income:[
-        ...DEFAULT_INCOME_CATS
-      ]
-    };
-  }
-
-  if(type){
-    return (
-      S.categories[bookId][type]
-      || []
-    );
-  }
-
-  return [
-    ...S.categories[bookId]
-      .expense,
-    ...S.categories[bookId]
-      .income
-  ];
+  const b=S.books.find(x=>x.id===bookId);
+  const c=b?b.categories:defaultCats();
+  return type?(c[type]||[]):[...c.expense,...c.income];
 }
-
-function openBooksSheet(){
-  document.getElementById('sheetBg').classList.add('open');
-  renderBooksSheet();
+function catColor(name){
+  const i=bookCats(S.currentBookId).indexOf(name);
+  const P=catPalette();return P[(i>=0?i:hashStr(name))%P.length];
 }
+function refreshHeader(){
+  if(!U)return;
+  const b=currentBook();
+  $('userAvatar').textContent=initials(U.name);
+  $('headerBookName').textContent=b?b.name:'Loading…';
+  $('headerBookIcon').textContent=b?b.emoji:'📒';
+}
+function updateFab(){
+  const b=currentBook(),hide=(V.page==='categories'||V.page==='profile'||!b||!canEdit(b));
+  $('fabBtn').style.display=hide?'none':'flex';
+  if(hide)closeAddMenu();else if($('addMenu').classList.contains('open'))renderAddMenu();
+}
+// + : in a shared book it opens a small menu (Expense / Payment with the amount to pay); in a personal book it adds an entry directly
+function onFabClick(){
+  const b=currentBook();if(!b||!canEdit(b))return;
+  if(!isShared(b)){openTxnSheet(null);return;}
+  if($('addMenu').classList.contains('open')){closeAddMenu();return;}
+  renderAddMenu();$('addMenu').classList.add('open');$('addMenuBg').classList.add('open');$('fabBtn').classList.add('open');
+}
+function closeAddMenu(){
+  const m=$('addMenu');if(!m)return;
+  m.classList.remove('open');$('addMenuBg').classList.remove('open');$('fabBtn').classList.remove('open');
+}
+function renderAddMenu(){
+  const rows=ledger().filter(o=>o.bal>0.004);
+  const pay=rows.filter(o=>o.d===U.uid).reduce((s,o)=>s+o.bal,0),recv=rows.filter(o=>o.c===U.uid).reduce((s,o)=>s+o.bal,0);
+  const parts=[];if(pay>0.004)parts.push(`<span class="am-s warn">To pay ${fmt(pay)}</span>`);if(recv>0.004)parts.push(`<span class="am-s good">To receive ${fmt(recv)}</span>`);
+  $('addMenu').innerHTML=`<button class="am-item" onclick="addMenuPick('pay')"><span class="am-ic">💸</span><span><div class="am-t">Payment</div>
+      <div style="display:flex;flex-direction:column;gap:1px">${parts.length?parts.join(''):'<span class="am-s">Pay or send money</span>'}</div></span></button>
+    <button class="am-item" onclick="addMenuPick('entry')"><span class="am-ic">🧾</span><span><div class="am-t">Expense</div><div class="am-s">or income entry</div></span></button>`;
+}
+function addMenuPick(w){closeAddMenu();if(w==='pay')openPayNow();else openTxnSheet(null);}
+function renderAll(){if(!U)return;refreshHeader();updateFab();renderMonthTabs();renderPage();refreshBooksSheetIfOpen();}
+function refreshBooksSheetIfOpen(){
+  if($('sheetBg').classList.contains('open')&&$('sheetInner').querySelector('.book-item'))renderBooksSheet();
+}
+function openSheet(){closeAddMenu();$('sheetBg').classList.add('open');}
+function openBooksSheet(){openSheet();renderBooksSheet();}
 
 function renderBooksSheet(){
   const items=S.books.map(b=>{
-    const isOwner=b.ownerId===S.user.id;
-    const isShared=b.members.length>1;
-    const isCurrent=b.id===S.currentBookId;
-    return `<div class="book-item ${isCurrent?'current':''}">
-      <div onclick="selectBook('${b.id}')" style="display:flex;align-items:center;flex:1;gap:10px;cursor:pointer">
-        <div class="book-item-icon" style="background:${isCurrent?'#185FA520':'var(--surface)'};border:1.5px solid var(--border)">${b.emoji}</div>
+    const cur=b.id===S.currentBookId,id=esc(b.id),owner=isOwner(b),n=b.memberIds.length;
+    return `<div class="book-item ${cur?'current':''}">
+      <div data-id="${id}" onclick="selectBook(this.dataset.id)" style="display:flex;align-items:center;flex:1;gap:10px;cursor:pointer">
+        <div class="book-item-icon" style="background:${cur?'var(--blue-light)':'var(--surface)'};border:1.5px solid var(--border)">${esc(b.emoji)}</div>
         <div class="book-item-body">
-          <div class="book-item-name">${b.name}</div>
-          <div class="book-item-meta">${b.members.length} member${b.members.length>1?'s':''} · ${isOwner?'Owner':'Member'}</div>
+          <div class="book-item-name">${esc(b.name)}</div>
+          <div class="book-item-meta">${n} member${n>1?'s':''} · ${owner?'Owner':(myRole(b)==='editor'?'Editor':'Viewer')}</div>
         </div>
-        ${isShared?`<span class="book-badge shared-badge">Shared</span>`:''}
-        ${isCurrent?`<span class="book-badge">Active</span>`:''}
+        ${n>1?'<span class="book-badge shared-badge">Shared</span>':''}${cur?'<span class="book-badge">Active</span>':''}
       </div>
       <div style="position:relative">
-        <button class="book-menu-btn" onclick="toggleBookMenu('${b.id}')" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:6px;margin-left:4px" title="More options">⋮</button>
-        <div class="book-menu-popup" id="menu-${b.id}" style="display:none;position:absolute;top:100%;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;min-width:140px;overflow:hidden">
-          ${isOwner?`
-            <button onclick="openRenameBookSheet('${b.id}')" style="display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;color:var(--text);cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✏️ Rename</button>
-            <button onclick="openBookSettingsSheet('${b.id}')" style="display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;color:var(--text);cursor:pointer;font-size:13px" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">⚙️ Settings</button>
-          `:`
-            <button onclick="openLeaveBookConfirm('${b.id}')" style="display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;color:var(--red);cursor:pointer;font-size:13px" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">🚪 Leave Book</button>
-          `}
+        <button class="book-menu-btn" data-id="${id}" onclick="toggleBookMenu(this.dataset.id)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:6px;margin-left:4px" title="More options">⋮</button>
+        <div class="book-menu-popup" id="menu-${id}" style="display:none;position:absolute;top:100%;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;min-width:140px;overflow:hidden">
+          ${owner?`
+          <button data-id="${id}" onclick="openRenameBookSheet(this.dataset.id)" style="display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;color:var(--text);cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)">✏️ Rename</button>
+          <button data-id="${id}" onclick="confirmDeleteBook(this.dataset.id)" style="display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;color:var(--red);cursor:pointer;font-size:13px">🗑️ Delete</button>`
+          :`<button data-id="${id}" onclick="confirmLeaveBook(this.dataset.id)" style="display:block;width:100%;text-align:left;padding:10px 14px;border:none;background:none;color:var(--red);cursor:pointer;font-size:13px">🚪 Leave Book</button>`}
         </div>
       </div>
     </div>`;
   }).join('');
-
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">Your Books
-      <button class="close-btn" onclick="closeSheetNow()">×</button>
-    </div>
-    ${items}
+  $('sheetInner').innerHTML=`
+    <div class="sheet-title">Your Books<button class="close-btn" onclick="closeSheetNow()">×</button></div>
+    ${items||'<div class="empty-text" style="padding:12px;color:var(--text3)">Loading…</div>'}
     <div class="divider"></div>
-    <button class="btn btn-primary" onclick="openAddBookSheet()" style="margin-bottom:8px">+ New Book</button>
-    <button class="btn btn-outline" onclick="openJoinBookSheet()">Join Shared Book</button>
-  `;
+    <button class="btn btn-primary" onclick="openAddBookSheet()">+ New Book</button>`;
 }
-
-function toggleBookMenu(bookId){
-  const menu=document.getElementById('menu-'+bookId);
-  if(!menu) return;
-  // Close other menus
-  document.querySelectorAll('.book-menu-popup').forEach(m=>m.style.display='none');
-  // Toggle this menu
-  menu.style.display=menu.style.display==='none'?'block':'none';
+function toggleBookMenu(id){
+  const m=$('menu-'+id);if(!m)return;
+  const was=m.style.display==='block';
+  document.querySelectorAll('.book-menu-popup').forEach(x=>x.style.display='none');
+  m.style.display=was?'none':'block';
 }
-
-// Close menu when clicking outside
-document.addEventListener('click',function(e){
-  if(!e.target.closest('.book-menu-btn')&&!e.target.closest('.book-menu-popup')){
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.book-menu-btn')&&!e.target.closest('.book-menu-popup'))
     document.querySelectorAll('.book-menu-popup').forEach(m=>m.style.display='none');
-  }
 });
 
-function openRenameBookSheet(bookId){
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b){toast('Book not found');return;}
-  if(b.ownerId!==S.user.id){toast('Only the owner can rename this book');return;}
-  
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">Rename Book
-      <button class="close-btn" onclick="openBooksSheet()">×</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Book Name</label>
-      <input class="form-input" id="renameBookInput" placeholder="Book name..." value="${b.name}" autofocus />
-    </div>
-    <button class="btn btn-primary" onclick="saveRenameBook('${bookId}')">Save</button>
-    <button class="btn btn-outline" onclick="openBooksSheet()" style="margin-top:8px">Cancel</button>
-  `;
-  document.getElementById('sheetBg').classList.add('open');
+function openRenameBookSheet(id){
+  const b=S.books.find(x=>x.id===id);if(!b)return;
+  $('sheetInner').innerHTML=`
+    <div class="sheet-title">Rename Book<button class="close-btn" onclick="openBooksSheet()">×</button></div>
+    <div class="form-group"><label class="form-label">Book Name</label>
+      <input class="form-input" id="renameBookInput" maxlength="60" value="${esc(b.name)}"/></div>
+    <button class="btn btn-primary" data-id="${esc(id)}" onclick="saveRenameBook(this.dataset.id)">Save</button>
+    <button class="btn btn-outline" onclick="openBooksSheet()">Cancel</button>`;
+  openSheet();
 }
-
-function saveRenameBook(bookId){
-  const name=document.getElementById('renameBookInput').value.trim();
+function saveRenameBook(id){
+  const name=$('renameBookInput').value.trim();
   if(!name){toast('Enter a book name');return;}
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b)return;
-  b.name=name;
-  if(S.currentBookId===bookId){
-    document.getElementById('headerBookName').textContent=b.name;
-  }
-  saveUserData();
-  toast('Book renamed ✓');
-  openBooksSheet();
+  bookRef(id).update({name:name.slice(0,60)}).catch(dbErr);
+  toast('Book renamed ✓');openBooksSheet();
 }
-
-function openBookSettingsSheet(bookId){
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b){toast('Book not found');return;}
-  if(b.ownerId!==S.user.id){toast('Only the owner can access settings');return;}
-  
-  const membersList=b.members.filter(m=>m.userId!==S.user.id).map(m=>`
-    <div class="member-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:8px">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${m.name}</div>
-        <div style="font-size:12px;color:var(--text2)">${m.email}</div>
-      </div>
-      <button onclick="deleteUserFromBook('${bookId}','${m.email}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:4px">✕ Delete</button>
-    </div>
-  `).join('');
-  
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">Book Settings
-      <button class="close-btn" onclick="openBooksSheet()">×</button>
-    </div>
-    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">Delete Members</div>
-    ${membersList?membersList:'<div style="font-size:12px;color:var(--text3);padding:10px">No members to remove</div>'}
-    <div class="divider"></div>
-    <button class="btn btn-danger" onclick="confirmDeleteBook('${bookId}')" style="width:100%">🗑️ Delete Book</button>
-    <button class="btn btn-outline" onclick="openBooksSheet()" style="margin-top:8px;width:100%">Close</button>
-  `;
-  document.getElementById('sheetBg').classList.add('open');
-}
-
-function deleteUserFromBook(bookId,userEmail){
-  if(!confirm(`Delete ${userEmail} from this book? They will no longer see it.`))return;
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b)return;
-  b.members=b.members.filter(m=>m.email!==userEmail);
-  saveUserData();
-  if(isSharedBook(b.id)) saveSharedBookData(b.id);
-  toast('Member removed ✓');
-  openBookSettingsSheet(bookId);
-}
-
-function openLeaveBookConfirm(bookId){
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b)return;
-  confirmLeaveBook(bookId);
-}
-
 function selectBook(id){
-  S.currentBookId=id;
-  const b=currentBook();
-  document.getElementById('headerBookName').textContent=b.name;
-  document.getElementById('headerBookIcon').textContent=b.emoji;
-  saveUserData();
-  // Attach realtime listener if switching to a shared book
-  attachSharedBookListener(id);
-  closeSheetNow();
-  renderMonthTabs();showPage('dashboard');
+  if(!S.books.some(b=>b.id===id))return;
+  S.currentBookId=id;lsSet('flyover_cur_'+U.uid,id);V.catFilter='all';V.who='all';V.q='';
+  attachTxns(id);
+  closeSheetNow();showPage('dashboard');
 }
-
 function openAddBookSheet(){
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">New Book
-      <button class="close-btn" onclick="openBooksSheet()">×</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Book Name</label>
-      <input class="form-input" id="newBookName" placeholder="e.g. Business, Family, Travel..." />
-    </div>
-    <div class="form-group">
-      <label class="form-label">Icon</label>
+  $('sheetInner').innerHTML=`
+    <div class="sheet-title">New Book<button class="close-btn" onclick="openBooksSheet()">×</button></div>
+    <div class="form-group"><label class="form-label">Book Name</label>
+      <input class="form-input" id="newBookName" maxlength="60" placeholder="e.g. Business, Family, Travel..."/></div>
+    <div class="form-group"><label class="form-label">Icon</label>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px" id="emojiPicker">
-        ${BOOK_EMOJIS.map((e,i)=>`<div class="cat-chip ${i===0?'selected':''}" style="font-size:20px;padding:8px;justify-content:center" onclick="pickEmoji(this,'${e}')">${e}</div>`).join('')}
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="createBook()" style="margin-top:8px">Create Book</button>
-  `;
+        ${BOOK_EMOJIS.map((e,i)=>`<div class="cat-chip ${i===0?'selected':''}" style="font-size:20px;padding:8px;justify-content:center" data-e="${e}" onclick="pickEmoji(this,this.dataset.e)">${e}</div>`).join('')}
+      </div></div>
+    <button class="btn btn-primary" onclick="createBook()" style="margin-top:8px">Create Book</button>`;
   window._newBookEmoji=BOOK_EMOJIS[0];
 }
-
 function pickEmoji(el,e){
   document.querySelectorAll('#emojiPicker .cat-chip').forEach(c=>c.classList.remove('selected'));
   el.classList.add('selected');window._newBookEmoji=e;
 }
-
 function createBook(){
-  if(guestBlocked()) return;
-  const name=document.getElementById('newBookName').value.trim();
+  const name=$('newBookName').value.trim();
   if(!name){toast('Enter a book name');return;}
-  const book={id:uid(),name,emoji:window._newBookEmoji||'📒',ownerId:S.user.id,members:[{userId:S.user.id,email:S.user.email,name:S.user.name,role:'owner'}]};
-  S.books.push(book);
- S.categories[book.id]={
-  expense:[...DEFAULT_EXPENSE_CATS],
-  income:[...DEFAULT_INCOME_CATS]
-};
-  S.currentBookId=book.id;
-  document.getElementById('headerBookName').textContent=book.name;
-  document.getElementById('headerBookIcon').textContent=book.emoji;
-  saveUserData();
-  // Register bookIndex for easy lookup by other users
-  if(window.db){
-    window.dbSet(window.dbRef(window.db,'bookIndex/'+book.id),{ownerId:S.user.id}).catch(e=>{});
-  }
-  closeSheetNow();
-  renderMonthTabs();showPage('dashboard');
+  const ref=db.collection('books').doc();
+  pendingSelect=ref.id;
+  ref.set(newBookData(name.slice(0,60),window._newBookEmoji||'📒')).catch(e=>{pendingSelect=null;dbErr(e);});
+  closeSheetNow();showPage('dashboard');
   toast('Book "'+name+'" created ✓');
 }
-
-function openEditBookSheet(bookId){
-  // Deprecated: Use openRenameBookSheet or openBookSettingsSheet instead
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b){toast('Book not found');return;}
-  if(b.ownerId!==S.user.id){toast('Only the owner can edit this book');return;}
-  openRenameBookSheet(bookId);
-}
-
-function pickEmojiEdit(el,e){
-  document.querySelectorAll('#emojiPickerEdit .cat-chip').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');window._editBookEmoji=e;
-}
-
-function saveEditBook(bookId){
-  const name=document.getElementById('editBookName').value.trim();
-  if(!name){toast('Enter a book name');return;}
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b)return;
-  b.name=name;
-  b.emoji=window._editBookEmoji||b.emoji;
-  if(S.currentBookId===bookId){
-    document.getElementById('headerBookName').textContent=b.name;
-    document.getElementById('headerBookIcon').textContent=b.emoji;
-  }
-  saveUserData();
-  toast('Book updated ✓');
-  openBooksSheet();
-}
-
-async function confirmDeleteBook(bookId){
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b)return;
-  const isOwner=b.ownerId===S.user.id;
-  if(!isOwner){toast('Only the owner can delete this book');return;}
+async function confirmDeleteBook(id){
+  const b=S.books.find(x=>x.id===id);if(!b||!isOwner(b))return;
   if(S.books.length===1){toast('Cannot delete your only book');return;}
-  if(!confirm('Delete "'+b.name+'"? All entries will be lost for all members.'))return;
-  // Write tombstone to Firebase so all members get notified via listener
-  if(window.db && b.shared){
-    try{
-      await window.dbSet(window.dbRef(window.db,'sharedBooks/'+bookId+'/deleted'),true);
-      await window.dbSet(window.dbRef(window.db,'sharedBooks/'+bookId+'/meta'),{name:b.name,deleted:true});
-    }catch(e){console.log('tombstone error:',e);}
-  }
-  _removeBookLocally(bookId);
-  toast('Book deleted');
-  openBooksSheet();
+  if(!confirm('Delete "'+b.name+'"? All entries will be deleted for every member.'))return;
+  _nfMute=Date.now()+15000;
+  try{
+    const ids=id===S.currentBookId?S.transactions.map(t=>t.id):(await txCol(id).get()).docs.map(d=>d.id);
+    // Queued writes are applied in order: entries first (rules need the book to exist), then the book itself
+    runChunks(ids,(bt,tid)=>bt.delete(txCol(id).doc(tid))).catch(dbErr);
+    const pids=(await payCol(id).get()).docs.map(d=>d.id);
+    runChunks(pids,(bt,pid)=>bt.delete(payCol(id).doc(pid))).catch(dbErr);
+    _nfMute=Date.now()+15000;
+    bookRef(id).delete().catch(dbErr);
+    toast('Book deleted');
+  }catch(e){dbErr(e);}
 }
-
-function _removeBookLocally(bookId){
-  S.transactions=S.transactions.filter(t=>t.bookId!==bookId);
-  S.books=S.books.filter(bk=>bk.id!==bookId);
-  delete S.categories[bookId];
-  if(S.currentBookId===bookId){
-    S.currentBookId=S.books[0]?S.books[0].id:null;
-    if(S.books[0]){
-      document.getElementById('headerBookName').textContent=S.books[0].name;
-      document.getElementById('headerBookIcon').textContent=S.books[0].emoji;
-    }
-  }
-  saveUserData();
-}
-
-function confirmLeaveBook(bookId){
-  const b=S.books.find(bk=>bk.id===bookId);
-  if(!b)return;
-  if(!confirm('Leave "'+b.name+'"? You can rejoin with the Book ID later.'))return;
-  // Remove self from members in sharedBooks meta
-  if(window.db){
-    window.dbGet(window.dbRef(window.db,'sharedBooks/'+bookId)).then(snap=>{
-      if(snap.exists()){
-        const data=snap.val();
-        const meta=data.meta||{};
-        meta.members=(meta.members||[]).filter(m=>m.userId!==S.user.id);
-        window.dbSet(window.dbRef(window.db,'sharedBooks/'+bookId+'/meta'),meta).catch(e=>{});
-      }
-    }).catch(e=>{});
-  }
-  detachSharedBookListener();
-  _removeBookLocally(bookId);
+function confirmLeaveBook(id){
+  const b=S.books.find(x=>x.id===id);if(!b)return;
+  if(!confirm('Leave "'+b.name+'"? The owner will need to invite you again to rejoin.'))return;
+  bookRef(id).update({memberIds:FV.arrayRemove(U.uid),['members.'+U.uid]:FV.delete()}).catch(dbErr);
   toast('Left book');
-  openBooksSheet();
 }
-
-function openJoinBookSheet(){
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">Join a Shared Book
-      <button class="close-btn" onclick="openBooksSheet()">×</button>
-    </div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Ask the book owner to share their Book ID with you, then enter it below.</p>
-    <div class="form-group">
-      <label class="form-label">Book ID</label>
-      <input class="form-input" id="joinBookId" placeholder="Paste book ID here..." />
-    </div>
-    <button class="btn btn-primary" onclick="joinBook()">Join Book</button>
-  `;
-}
-
-async function joinBook(){
-  if(guestBlocked()) return;
-  const id=document.getElementById('joinBookId').value.trim();
-  if(!id){toast('Please enter a book ID');return;}
-  
-  // Show loading
-  const joinBtn=document.querySelector('#sheetInner .btn-primary');
-  if(joinBtn){joinBtn.textContent='Searching...';joinBtn.disabled=true;}
-  
-  let found=null;let foundOwnerId=null;let foundOwnerKey=null;
-  
-  // Search Firebase expenseData index node (fast lookup)
-  if(window.db){
-    try{
-      const idxSnap=await window.dbGet(window.dbRef(window.db,'bookIndex/'+id));
-      if(idxSnap.exists()){
-        const ownerId=idxSnap.val().ownerId;
-        const ownerSnap=await window.dbGet(window.dbRef(window.db,'expenseData/'+ownerId));
-        if(ownerSnap.exists()){
-          const d=ownerSnap.val();
-          const b=(d.books||[]).find(b=>b.id===id);
-          if(b){found=b;foundOwnerId=ownerId;}
-        }
-      }
-    }catch(e){console.log('Firebase index search error:',e);}
-  }
-  
-  // Fallback: scan all Firebase users' expenseData
-  if(!found && window.db){
-    try{
-      const allSnap=await window.dbGet(window.dbRef(window.db,'expenseData'));
-      if(allSnap.exists()){
-        const allData=allSnap.val();
-        for(const [uid,udata] of Object.entries(allData)){
-          const b=(udata.books||[]).find(b=>b.id===id);
-          if(b){found=b;foundOwnerId=uid;break;}
-        }
-      }
-    }catch(e){console.log('Firebase full scan error:',e);}
-  }
-  
-  // Fallback: scan localStorage cached users
-  if(!found){
-    const users=getUsers();
-    for(const u of users){
-      try{
-        const cacheKeys=['fp_data_'+u.id,'fp_cache_'+u.id];
-        for(const k of cacheKeys){
-          const d=JSON.parse(localStorage.getItem(k)||'{}');
-          const b=(d.books||[]).find(b=>b.id===id);
-          if(b){found=b;foundOwnerId=u.id;foundOwnerKey=k;break;}
-        }
-        if(found)break;
-      }catch{}
-    }
-  }
-  
-  if(joinBtn){joinBtn.textContent='Join Book';joinBtn.disabled=false;}
-  if(!found){toast('Book not found. Check the ID.');return;}
-  if(found.members.find(m=>m.userId===S.user.id)){toast('You are already a member!');return;}
-  
-  // Add self to members
-  found.members.push({userId:S.user.id,email:S.user.email,name:S.user.name,role:'member'});
-  
-  // Update owner's data (both localStorage and Firebase)
-  if(foundOwnerKey){
-    try{
-      const d=JSON.parse(localStorage.getItem(foundOwnerKey)||'{}');
-      const bi=d.books.findIndex(b=>b.id===id);
-      if(bi>=0)d.books[bi]=found;
-      localStorage.setItem(foundOwnerKey,JSON.stringify(d));
-    }catch{}
-  }
-  
-  // Update owner's Firebase data
-  if(foundOwnerId && window.db){
-    try{
-      const ownerSnap=await window.dbGet(window.dbRef(window.db,'expenseData/'+foundOwnerId));
-      if(ownerSnap.exists()){
-        const d=ownerSnap.val();
-        const bi=d.books.findIndex(b=>b.id===id);
-        if(bi>=0)d.books[bi]=found;
-        await window.dbSet(window.dbRef(window.db,'expenseData/'+foundOwnerId),d);
-      }
-    }catch(e){console.log('Firebase update error:',e);}
-  }
-  
-  // Ensure bookIndex exists for future joins
-  if(foundOwnerId && window.db){
-    try{await window.dbSet(window.dbRef(window.db,'bookIndex/'+found.id),{ownerId:foundOwnerId});}catch(e){}
-  }
-  
-  found.shared=true;  // mark as shared
-  // Add to own books
-  S.books.push(found);
-  if(!S.categories[found.id]){
-    S.categories[found.id]={
-      expense:[...DEFAULT_EXPENSE_CATS],
-      income:[...DEFAULT_INCOME_CATS]
-    };
-  }
-  
-  S.currentBookId=found.id;
-  document.getElementById('headerBookName').textContent=found.name;
-  document.getElementById('headerBookIcon').textContent=found.emoji;
-  saveUserData();
-  // Sync shared book data immediately and attach listener
-  await saveSharedBookData(found.id);
-  attachSharedBookListener(found.id);
-  closeSheetNow();
-  renderMonthTabs();showPage('dashboard');
-  toast('Joined "'+found.name+'" ✓');
-}
-
 // ═══════════════════════════════════════════════
-//  SHARE / INVITE MEMBERS
+//  SHARING
 // ═══════════════════════════════════════════════
 function openShareSheet(){
-  if(guestBlocked()) return;
-  const book=currentBook();
-  const isOwner=book.ownerId===S.user.id;
-  const members=book.members.map(m=>{
-    const roleLabel=m.role==='owner'?'👑 Owner':m.role==='editor'?'✏️ Editor':'👁 Viewer';
-    const roleBtnHtml=isOwner&&m.role!=='owner'?`
-      <select onchange="changeMemberRole('${m.userId}',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);margin-left:4px">
+  const b=currentBook();if(!b)return;
+  const owner=isOwner(b);
+  const list=Object.entries(b.members).sort((x,y)=>(x[1].role==='owner'?0:1)-(y[1].role==='owner'?0:1));
+  const rows=list.map(([uid,m])=>{
+    const ctl=owner&&m.role!=='owner'?`
+      <select data-u="${esc(uid)}" onchange="changeMemberRole(this.dataset.u,this.value)" style="font-size:11px;padding:3px 5px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);margin-left:4px">
         <option value="editor" ${m.role==='editor'?'selected':''}>✏️ Editor</option>
-        <option value="viewer" ${m.role==='viewer'?'selected':''}>👁 Viewer</option>
-      </select>`:'<span class="member-role role-owner">'+roleLabel+'</span>';
-    const removeBtn=isOwner&&m.userId!==S.user.id?`<button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;margin-left:4px;flex-shrink:0" onclick="removeMember('${m.userId}')">×</button>`:'';
-    return`<div class="member-row" style="align-items:center">
-      <div class="member-avatar">${(m.name||m.email).slice(0,2).toUpperCase()}</div>
-      <div class="member-info" style="flex:1;min-width:0">
-        <div class="member-name">${m.name||'Unknown'}</div>
-        <div class="member-email" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.email}</div>
-      </div>
-      ${roleBtnHtml}${removeBtn}
-    </div>`;
+        <option value="viewer" ${m.role==='viewer'?'selected':''}>👁 Viewer</option></select>
+      <button data-u="${esc(uid)}" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;margin-left:4px" onclick="removeMember(this.dataset.u)">×</button>`
+      :`<span class="member-role role-owner">${roleLabel(m.role)}</span>`;
+    return `<div class="member-row">
+      <div class="member-avatar">${esc(initials(m.name||m.email))}</div>
+      <div class="member-info" style="flex:1;min-width:0"><div class="member-name">${esc(m.name||'Unknown')}${uid===U.uid?' (you)':''}</div>
+        <div class="member-email" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.email||'')}</div></div>${ctl}</div>`;
   }).join('');
-
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">Share Book
-      <button class="close-btn" onclick="closeSheetNow()">×</button>
-    </div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">BOOK ID (share this)</div>
-      <div style="font-size:13px;font-weight:700;color:var(--blue);letter-spacing:1px;word-break:break-all">${book.id}</div>
-      <button class="btn btn-outline" style="margin-top:8px;padding:7px" onclick="copyBookId('${book.id}')">Copy ID</button>
-    </div>
-    <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Members (${book.members.length})</div>
-    ${members}
-    ${isOwner?`
-    <div class="divider"></div>
-    <div class="form-group">
-      <label class="form-label">Invite by Email</label>
-      <div class="add-row">
-        <input class="form-input" id="inviteEmail" type="email" placeholder="friend@gmail.com"/>
-        <button class="btn-sq" onclick="inviteByEmail()">+</button>
+  const invite=owner?`
+    <div class="form-group"><label class="form-label">Invite by email</label>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="inviteEmail" type="email" placeholder="person@example.com" autocapitalize="off" autocomplete="off" style="flex:1"/>
+        <button class="btn-sq" id="inviteBtn" onclick="inviteMemberByEmail()">+</button>
       </div>
-    </div>`:''}
-  `;
-  document.getElementById('sheetBg').classList.add('open');
+      <p style="font-size:11px;color:var(--text3);margin-top:6px">They must already have a Flyover account. They'll join as an Editor — you can switch them to Viewer below.</p>
+    </div><div class="divider"></div>`:'';
+  $('sheetInner').innerHTML=`
+    <div class="sheet-title">Share Book<button class="close-btn" onclick="closeSheetNow()">×</button></div>
+    ${invite}
+    <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Members (${list.length})</div>${rows}`;
+  openSheet();
 }
-
-function copyBookId(id){
-  try{navigator.clipboard.writeText(id);toast('Book ID copied!');}
-  catch{prompt('Copy this Book ID:',id);}
+function inviteMemberByEmail(){
+  const b=currentBook();if(!b||!isOwner(b))return;
+  const raw=$('inviteEmail').value.trim();
+  const email=raw.toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast('Enter a valid email address');return;}
+  if(email===(U.email||'').toLowerCase()){toast("That's your own email");return;}
+  if(Object.values(b.members).some(m=>(m.email||'').toLowerCase()===email)){toast('Already a member');return;}
+  const btn=$('inviteBtn');btn.disabled=true;btn.textContent='…';
+  db.collection('emailIndex').doc(email).get().then(doc=>{
+    if(!doc.exists){toast('No Flyover account found for that email — ask them to sign up first',3500);return;}
+    const info=doc.data()||{};
+    const uid=info.uid;
+    if(!uid){toast('Could not find that account');return;}
+    if(b.memberIds.includes(uid)){toast('Already a member');return;}
+    return bookRef(b.id).update({
+      memberIds:FV.arrayUnion(uid),
+      ['members.'+uid]:{name:info.name||email,email:info.email||email,role:'editor'}
+    }).then(()=>{$('inviteEmail').value='';toast((info.name||email)+' added ✓');});
+  }).catch(dbErr).then(()=>{const el=$('inviteBtn');if(el){el.disabled=false;el.textContent='+';}});
 }
-
-async function inviteByEmail(){
-  const email=document.getElementById('inviteEmail').value.trim().toLowerCase();
-  if(!email)return;
-  
-  // Search localStorage users first
-  let invitedUser=getUsers().find(u=>u.email.toLowerCase()===email)||null;
-  
-  // Search Firebase users node if not found locally
-  if(!invitedUser && window.db){
-    try{
-      const snap=await window.dbGet(window.dbRef(window.db,'users'));
-      if(snap.exists()){
-        for(const [uid,udata] of Object.entries(snap.val())){
-          const userEmail=(udata.email||'').toLowerCase().trim();
-          if(userEmail===email){
-            invitedUser={id:uid,email:udata.email,name:udata.name||email.split('@')[0],initials:(udata.name||email).slice(0,2).toUpperCase()};
-            break;
-          }
-        }
-      }
-    }catch(e){console.log('Firebase users node search:',e);}
-  }
-  
-  // BUG FIX #2: Fallback - scan expenseData for user (catches users who created books but aren't in users node yet)
-  if(!invitedUser && window.db){
-    try{
-      const expSnap=await window.dbGet(window.dbRef(window.db,'expenseData'));
-      if(expSnap.exists()){
-        const allUserData=expSnap.val();
-        for(const [uid,udata] of Object.entries(allUserData)){
-          if(!udata || !udata.books) continue;
-          // Check this user's profile or extract from their books' members
-          for(const book of udata.books){
-            if(!book.members) continue;
-            for(const member of book.members){
-              if((member.email||'').toLowerCase().trim()===email){
-                invitedUser={id:uid,email:member.email,name:member.name,initials:(member.name||email).slice(0,2).toUpperCase()};
-                break;
-              }
-            }
-            if(invitedUser) break;
-          }
-          if(invitedUser) break;
-        }
-      }
-    }catch(e){console.log('Firebase expenseData fallback search:',e);}
-  }
-  
-  if(!invitedUser){toast('User not found. They must register first.');return;}
-  const book=currentBook();
-  if(book.members.find(m=>m.userId===invitedUser.id)){toast('Already a member!');return;}
-  book.shared=true;  // mark as shared book
-  book.members.push({userId:invitedUser.id,email:invitedUser.email,name:invitedUser.name,role:'editor'});
-  
-  // Save to current user's Firebase and localStorage
-  saveUserData();
-  
-  // Also add book to invited user's data (localStorage)
-  try{
-    const key='fp_data_'+invitedUser.id;
-    const d=JSON.parse(localStorage.getItem(key)||'{}');
-    if(!d.books)d.books=[];
-    if(!d.books.find(b=>b.id===book.id)){
-      d.books.push(book);
-      if(!d.categories)d.categories={};
-      d.categories[book.id]={expense:bookCats(book.id,'expense'),income:bookCats(book.id,'income')};
-    }
-    localStorage.setItem(key,JSON.stringify(d));
-  }catch{}
-  
-  // Also add to invited user's Firebase data
-  if(window.db){
-    try{
-      const snap=await window.dbGet(window.dbRef(window.db,'expenseData/'+invitedUser.id));
-      let d=snap.exists()?snap.val():{books:[],categories:{}};
-      if(!d.books)d.books=[];
-      if(!d.books.find(b=>b.id===book.id)){
-        d.books.push(book);
-        if(!d.categories)d.categories={};
-        d.categories[book.id]={expense:bookCats(book.id,'expense'),income:bookCats(book.id,'income')};
-      }
-      await window.dbSet(window.dbRef(window.db,'expenseData/'+invitedUser.id),d);
-    }catch(e){console.log('Firebase invite error:',e);}
-  }
-  
-  // Update sharedBooks metadata with new member list
-  if(isSharedBook(book.id)){
-    saveSharedBookData(book.id);
-  }
-  toast(invitedUser.name+' added ✓');
-  openShareSheet();
+function changeMemberRole(uid,role){
+  const b=currentBook();if(!isOwner(b)||(role!=='editor'&&role!=='viewer'))return;
+  bookRef(b.id).update({['members.'+uid+'.role']:role}).then(()=>toast('Role updated to '+role)).catch(dbErr);
 }
-
-function removeMember(userId){
-  if(!S.user) return;
-  const book=currentBook();
-  if(book.ownerId!==S.user.id){toast('Only owner can remove members');return;}
-  book.members=book.members.filter(m=>m.userId!==userId);
-  saveUserData();
-  if(isSharedBook(book.id)) saveSharedBookData(book.id);
-  toast('Member removed');
-  openShareSheet();
+function removeMember(uid){
+  const b=currentBook();if(!isOwner(b)||uid===b.ownerId)return;
+  if(!confirm('Remove this member? They will lose access to the book.'))return;
+  bookRef(b.id).update({memberIds:FV.arrayRemove(uid),['members.'+uid]:FV.delete()}).then(()=>{toast('Member removed');}).catch(dbErr);
 }
-
-function changeMemberRole(userId,newRole){
-  if(!S.user) return;
-  const book=currentBook();
-  if(book.ownerId!==S.user.id){toast('Only owner can change roles');return;}
-  const mem=book.members.find(m=>m.userId===userId);
-  if(mem){
-    mem.role=newRole;
-    saveUserData();
-    if(isSharedBook(book.id)) saveSharedBookData(book.id);
-    toast('Role updated to '+newRole);
-  }
+// keep the open share sheet fresh when membership changes remotely
+function refreshShareSheetIfOpen(){
+  if($('sheetBg').classList.contains('open')&&$('sheetInner').querySelector('.member-row')&&!$('sheetInner').querySelector('select:focus, input:focus'))openShareSheet();
 }
 
 // ═══════════════════════════════════════════════
-//  NAVIGATION
+//  NAVIGATION & MONTH SELECTION
 // ═══════════════════════════════════════════════
 function showPage(page){
-  S.currentPage=page;
-  ['dashboard','transactions','categories','profile'].forEach(p=>{
-    document.getElementById('nav'+p.charAt(0).toUpperCase()+p.slice(1)).classList.toggle('active',p===page);
-  });
-  document.getElementById('fabBtn').style.display=page==='categories'||page==='profile'?'none':'flex';
-  renderMonthTabs();renderPage();
+  V.page=page;
+  ['dashboard','transactions','categories','profile'].forEach(p=>$('nav'+p.charAt(0).toUpperCase()+p.slice(1)).classList.toggle('active',p===page));
+  document.querySelectorAll('.drawer-item[data-p]').forEach(el=>el.classList.toggle('active',el.dataset.p===page));
+  closeDrawer();
+  updateFab();renderMonthTabs();renderPage();
 }
-
-// ── YEAR / MONTH TABS ──────────────────────────────────────
-// _selYear: null = show all years' months, or '2026' = filter to that year
-// S.currentMonth: selected month key e.g. '2026-01', or 'all' for whole-year view
-
-let _selYear=null; // null = current year on load
-
-function getBookYears(bookId){
-  const years=new Set();
-  (S.transactions||[]).filter(t=>t.bookId===bookId).forEach(t=>years.add(t.date.slice(0,4)));
-  years.add(today().slice(0,4));
-  return [...years].sort().reverse();
+function openDrawer(){
+  $('drawerAvatar').textContent=initials(U&&U.name);$('drawerName').textContent=(U&&U.name)||'';$('drawerSub').textContent=(U&&U.email)||'';
+  document.querySelectorAll('.drawer-item[data-p]').forEach(el=>el.classList.toggle('active',el.dataset.p===V.page));
+  $('drawerBg').classList.add('open');$('drawer').classList.add('open');
 }
-
-function getBookMonths(bookId,year){
-  const months=new Set();
-  (S.transactions||[]).filter(t=>t.bookId===bookId&&t.date.startsWith(year)).forEach(t=>months.add(monthKey(t.date)));
-  // always include current month if in this year
-  if(today().startsWith(year)) months.add(today().slice(0,7));
-  return [...months].sort().reverse();
+function closeDrawer(){const b=$('drawerBg'),d=$('drawer');if(b)b.classList.remove('open');if(d)d.classList.remove('open');}
+function drawerGo(p){showPage(p);}
+function getBookYears(){
+  const y=new Set(S.transactions.map(t=>t.date.slice(0,4)));y.add(today().slice(0,4));
+  return [...y].sort().reverse();
 }
-
-function bookTxnsForView(bookId){
-  const all=S.transactions.filter(t=>t.bookId===bookId);
-  if(S.currentMonth==='all'&&_selYear) return all.filter(t=>t.date.startsWith(_selYear));
-  if(S.currentMonth==='all') return all;
-  return all.filter(t=>t.date.startsWith(S.currentMonth));
+function getBookMonths(year){
+  const m=new Set(S.transactions.filter(t=>t.date.startsWith(year)).map(t=>monthKey(t.date)));
+  if(today().startsWith(year))m.add(today().slice(0,7));
+  return [...m].sort().reverse();
 }
-
+function viewTxns(){
+  if(V.month==='all')return V.year?S.transactions.filter(t=>t.date.startsWith(V.year)):S.transactions;
+  return S.transactions.filter(t=>t.date.startsWith(V.month));
+}
 function renderMonthTabs(){
-  const el=document.getElementById('monthScroll');
-  if(!el) return;
-  if(S.currentPage==='categories'||S.currentPage==='profile'){el.innerHTML='';return;}
-
-  const years=getBookYears(S.currentBookId);
-  if(!_selYear||!years.includes(_selYear)) _selYear=years[0]||today().slice(0,4);
-
-  const months=getBookMonths(S.currentBookId,_selYear);
-  
-  // Build dropdown options: "Jan 2026", "Feb 2026", etc. + "All Year"
-  const allMonths=[];
-  for(const y of years){
-    const yMonths=getBookMonths(S.currentBookId,y);
-    for(const m of yMonths){
-      const label=monthLabel(m);
-      allMonths.push({key:m,label});
-    }
-  }
-  // Add "All Year" option for each year
-  for(const y of years){
-    allMonths.push({key:'all-'+y,label:`All ${y}`});
-  }
-  
-  // Current selection display value
-  let displayValue='All Year';
-  if(S.currentMonth!=='all'){
-    const ml=monthLabel(S.currentMonth);
-    displayValue=ml;
-  }else if(_selYear){
-    displayValue=`All ${_selYear}`;
-  }
-  
-  const optionsHtml=allMonths.map(opt=>{
-    const isSelected=(opt.key===S.currentMonth)||(S.currentMonth==='all'&&opt.key===`all-${_selYear}`);
-    return `<option value="${opt.key}" ${isSelected?'selected':''}>${opt.label}</option>`;
-  }).join('');
-  
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
-      <span style="font-size:12px;color:var(--text2);font-weight:500">Month:</span>
-      <select id="monthDropdown" onchange="selectMonthFromDropdown(this.value)" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer">
-        ${optionsHtml}
-      </select>
-    </div>
-  `;
+  const el=$('monthScroll');if(!el)return;
+  if(V.page==='categories'||V.page==='profile'){el.innerHTML='';return;}
+  const years=getBookYears();
+  if(!V.year||!years.includes(V.year))V.year=years[0];
+  const options=[];
+  years.forEach(y=>getBookMonths(y).forEach(m=>options.push({key:m,label:monthLabel(m)})));
+  years.forEach(y=>options.push({key:'all-'+y,label:'All '+y}));
+  if(V.month!=='all'&&!options.some(o=>o.key===V.month)){V.month=today().slice(0,7);V.year=V.month.slice(0,4);}
+  const html=options.map(o=>`<option value="${o.key}" ${(o.key===V.month)||(V.month==='all'&&o.key==='all-'+V.year)?'selected':''}>${o.label}</option>`).join('');
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
+    <span style="font-size:12px;color:var(--text2);font-weight:500">Month:</span>
+    <select id="monthDropdown" onchange="selectMonthFromDropdown(this.value)" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer">${html}</select></div>`;
 }
-
 function selectMonthFromDropdown(val){
-  if(val.startsWith('all-')){
-    _selYear=val.slice(4);
-    S.currentMonth='all';
-  }else{
-    S.currentMonth=val;
-    _selYear=val.slice(0,4);
-  }
+  if(val.startsWith('all-')){V.year=val.slice(4);V.month='all';}else{V.month=val;V.year=val.slice(0,4);}
   renderMonthTabs();renderPage();
 }
+function periodLabel(){return V.month==='all'?('All '+(V.year||'')).trim():monthLabel(V.month);}
 
 // ═══════════════════════════════════════════════
 //  RENDER PAGES
 // ═══════════════════════════════════════════════
 function renderPage(){
-  // Safety guard: never render if not authenticated + not on main screen
-  if(!S.user && !S.isGuest) return;
-  if(!document.getElementById('mainScreen').classList.contains('active')) return;
-  const el=document.getElementById('pageContent');
-  if(S.currentPage==='dashboard')el.innerHTML=renderDashboard();
-  else if(S.currentPage==='transactions')el.innerHTML=renderTransactions();
-  else if(S.currentPage==='categories')el.innerHTML=renderCategoriesPage();
-  else el.innerHTML=renderProfilePage();
+  const el=$('pageContent');
+  if(!currentBook()){
+    el.innerHTML=`<div class="empty-state" style="margin-top:60px"><div class="empty-icon">☁️</div><div class="empty-text">${booksLoaded?'Loading your books…':'Connecting…'}</div></div>`;
+    return;
+  }
+  const ae=document.activeElement,keepF=(ae&&ae.id==='txnSearch')?[ae.selectionStart,ae.selectionEnd]:null;
+  el.innerHTML=V.page==='dashboard'?renderDashboard():V.page==='transactions'?renderTransactions():V.page==='categories'?renderCategoriesPage():renderProfilePage();
+  if(keepF){const n=$('txnSearch');if(n){n.focus();try{n.setSelectionRange(keepF[0],keepF[1]);}catch(e){}}}
+  refreshShareSheetIfOpen();
 }
-
+function splitLine(t){
+  const b=currentBook();
+  if(!b||!isShared(b)||t.type!=='expense'||!t.splits)return '';
+  const ent=Object.keys(t.splits).filter(u=>b.members[u]&&t.splits[u]>0.004);
+  if(!ent.length)return '';
+  const txt=ent.length===1?(ent[0]===t.createdBy?'No split · own expense':'Full amount for '+fn(ent[0])):'Split: '+ent.map(u=>fn(u)+' '+fmt(t.splits[u])).join(' · ');
+  return `<div style="font-size:10px;color:var(--text3);margin-top:1px">${esc(txt)}</div>`;
+}
+// ── PAYMENTS LEDGER (net balance between each pair of members) ──
+// c = the member who is owed (paid more for the other), d = the member who has to pay. Balance = d's shares on c's entries
+// − c's shares on d's entries − payments d made to c (+ payments c made to d). Only the net receiver records payments.
+const r2=x=>Math.round(x*100)/100;
+function fn(uid){const b=currentBook(),m=b&&b.members[uid];return ((m&&(m.name||m.email))||'Member').split(' ')[0];}
+function nm(uid){return uid===U.uid?'You':fn(uid);}
+function nmo(uid){return uid===U.uid?'you':fn(uid);}
+function payLine(c,d){return d===U.uid?'To pay '+fn(c):nm(c)+' paid expense of '+nmo(d);}
+function cleanPay(id,p){
+  if(!p||typeof p!=='object'||typeof p.from!=='string'||typeof p.to!=='string')return null;
+  const a=Number(p.amount);if(!Number.isFinite(a)||a<=0)return null;
+  const x=Number(p.extra),extra=Number.isFinite(x)&&x>0?Math.min(x,a):0;
+  return{id,from:p.from,to:p.to,amount:a,extra,date:String(p.date||'').slice(0,10),createdAt:String(p.createdAt||'')};
+}
+function viewPays(){
+  if(V.month==='all')return V.year?S.payments.filter(p=>p.date.startsWith(V.year)):S.payments;
+  return S.payments.filter(p=>p.date.startsWith(V.month));
+}
+function ledger(txns,pays){
+  const b=currentBook();if(!b)return [];
+  txns=txns||S.transactions;pays=pays||S.payments;
+  const f={},pm={},xf={},keys=new Set();
+  const pk=(x,y)=>[x,y].sort().join('|');
+  txns.forEach(t=>{
+    if(t.type!=='expense'||!t.splits||!b.members[t.createdBy])return;
+    Object.keys(t.splits).forEach(u=>{if(u!==t.createdBy&&b.members[u]&&t.splits[u]>0){const k=t.createdBy+'|'+u;f[k]=(f[k]||0)+t.splits[u];keys.add(pk(t.createdBy,u));}});
+  });
+  pays.forEach(p=>{
+    if(!b.members[p.from]||!b.members[p.to])return;
+    const k=p.to+'|'+p.from,e=p.extra||0;
+    pm[k]=(pm[k]||0)+(p.amount-e);                       // pm[c|d] = part of d's payments to c that settles pending
+    if(e>0)xf[pk(p.from,p.to)]=(xf[pk(p.from,p.to)]||0)+e;   // extra = sent as income, not part of the pending balance
+    keys.add(pk(p.from,p.to));
+  });
+  return [...keys].map(k=>{
+    const [a,z]=k.split('|');
+    const az=f[a+'|'+z]||0,za=f[z+'|'+a]||0,pza=pm[a+'|'+z]||0,paz=pm[z+'|'+a]||0;
+    const net=r2(az-za-pza+paz),fw=net>=0;
+    return{c:fw?a:z,d:fw?z:a,fwd:r2(fw?az:za),back:r2(fw?za:az),pay:r2(fw?pza-paz:paz-pza),bal:Math.abs(net),xfer:r2(xf[k]||0)};
+  });
+}
+// pending amount that `payer` still has to pay `payee` (all time)
+function pendingToPay(payer,payee){
+  const o=ledger().find(x=>samePair(x,payer,payee));
+  return o&&o.d===payer&&o.c===payee&&o.bal>0.004?o.bal:0;
+}
+const poss=uid=>uid===U.uid?'your':fn(uid)+"'s";
+function pairSub(o,recv,done){
+  const p=[];
+  if(o.fwd>0)p.push(nm(o.c)+' paid for '+nmo(o.d)+' '+fmt(o.fwd));
+  if(o.back>0)p.push(nm(o.d)+' paid for '+nmo(o.c)+' '+fmt(o.back));
+  if(o.pay!==0)p.push((done?'Payments ':recv?'Received ':'Paid ')+fmt(o.pay));
+  if(o.xfer>0)p.push('Sent as income '+fmt(o.xfer));
+  return esc(p.join(' · ')||'No pending payments');
+}
+const samePair=(o,x,y)=>(o.c===x&&o.d===y)||(o.c===y&&o.d===x);
+function allTimeRow(x,y){return ledger().find(o=>samePair(o,x,y))||null;}
+function renderPending(){
+  const b=currentBook();if(!b||!isShared(b))return '';
+  const rows=ledger(viewTxns(),viewPays()).filter(o=>o.fwd>0||o.back>0||o.pay!==0||o.xfer>0);
+  const head='<div class="section" style="padding-bottom:0"><div class="section-hdr"><div class="section-title">Payments · '+esc(periodLabel())+'</div></div>';
+  if(!rows.length)return head+'<div class="pend-ok">✓ Nothing to pay or receive</div></div>';
+  rows.sort((x,y)=>((y.c===U.uid||y.d===U.uid)-(x.c===U.uid||x.d===U.uid))||y.bal-x.bal);
+  return head+rows.map(o=>{
+    const other=o.c===U.uid?o.d:o.c,done=o.bal<=0.004,recv=o.c===U.uid,tot=Math.max(0,o.fwd-o.back),pct=tot>0?Math.min(100,Math.round(o.pay/tot*100)):(done?100:0);
+    const col=done||recv?'var(--green)':'var(--amber)',all=allTimeRow(o.c,o.d),open=!!all&&all.bal>0.004&&canEdit(b);
+    const canRec=open&&all.c===U.uid,canPay=open&&all.d===U.uid;
+    return `<div class="pend-card"><div class="pend-top"><div class="member-avatar">${esc(initials(fn(other)))}</div>
+      <div style="flex:1;min-width:0"><div class="pend-txt">${done?(o.fwd||o.back||o.pay?'Settled with ':'Money sent · ')+esc(fn(other)):esc(payLine(o.c,o.d))}</div>
+      <div class="pend-sub">${pairSub(o,recv,done)}</div></div>
+      <div class="pend-amt" style="color:${col}">${fmt(o.bal)}</div></div>
+      <div class="mem-bar" style="margin-top:8px"><div style="width:${pct}%;background:var(--green)"></div></div>
+      <div class="pend-actions"><button class="btn btn-ghost btn-sm" data-c="${esc(o.c)}" data-d="${esc(o.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,false)">History</button>
+      ${canRec?`<button class="btn btn-primary btn-sm" data-c="${esc(all.c)}" data-d="${esc(all.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,true)">Enter amount received</button>`:''}
+      ${canPay?`<button class="btn btn-primary btn-sm" data-c="${esc(all.c)}" data-d="${esc(all.d)}" onclick="openPaySheet(this.dataset.c,this.dataset.d,true)">Pay now</button>`:''}</div></div>`;
+  }).join('')+'</div>';
+}
+let _paySheet=null;
+function openPaySheet(c,d,all){_paySheet={c,d,all:!!all,touched:false};openSheet();renderPaySheet();}
+// "💸 Pay" button next to +: everything I still have to pay (all time), pick who if there is more than one
+function openPayNow(){
+  const b=currentBook();if(!b||!canEdit(b))return;
+  const L=ledger(),opts=[];
+  memberList(b).filter(m=>m.uid!==U.uid).forEach(m=>{
+    const owe=L.find(o=>o.d===U.uid&&o.c===m.uid&&o.bal>0.004),due=L.find(o=>o.c===U.uid&&o.d===m.uid&&o.bal>0.004);
+    opts.push({k:'pay',u:m.uid,amt:owe?owe.bal:0});          // pay this member (pending or just send money)
+    if(due)opts.push({k:'recv',u:m.uid,amt:due.bal});         // record money this member paid me
+  });
+  if(!opts.length){toast('Invite a member first');return;}
+  if(opts.length===1){payPick(opts[0].k,opts[0].u);return;}
+  _paySheet=null;openSheet();
+  $('sheetInner').innerHTML=`<div class="sheet-title">Payment<button class="close-btn" onclick="closeSheetNow()">×</button></div>`+opts.map(o=>{
+    const pay=o.k==='pay';
+    return `<div class="pend-card" data-k="${o.k}" data-u="${esc(o.u)}" onclick="payPick(this.dataset.k,this.dataset.u)" style="cursor:pointer"><div class="pend-top"><div class="member-avatar">${esc(initials(fn(o.u)))}</div>
+    <div style="flex:1"><div class="pend-txt">${pay?(o.amt>0?'To pay ':'Send money to '):'Received from '}${esc(fn(o.u))}</div>${pay&&o.amt<=0?`<div class="pend-sub">Added to ${esc(poss(o.u))} income</div>`:''}</div>
+    ${o.amt>0?`<div class="pend-amt" style="${pay?'':'color:var(--green)'}">${fmt(o.amt)}</div>`:''}</div></div>`;}).join('');
+}
+function payPick(k,u){if(k==='pay')openPaySheet(u,U.uid,true);else openPaySheet(U.uid,u,true);}
+function payCap(){
+  const P=_paySheet,b=currentBook();
+  if(!P||!b)return{payer:false,pend:0};
+  const payer=canEdit(b)&&P.d===U.uid;
+  if(payer)return{payer,pend:pendingToPay(U.uid,P.c)};
+  const a=allTimeRow(P.c,P.d);
+  return{payer:false,pend:(a&&a.c===U.uid&&a.bal>0.004)?a.bal:0};
+}
+function renderPaySheet(){
+  const P=_paySheet,b=currentBook();if(!P||!b||!$('sheetInner'))return;
+  const keep=$('payAmt')?$('payAmt').value:'',keepDate=$('payDate')?$('payDate').value:'';
+  const txns=P.all?S.transactions:viewTxns(),pays=P.all?S.payments:viewPays(),per=P.all?'All time':periodLabel();
+  const o=ledger(txns,pays).find(x=>samePair(x,P.c,P.d))||{c:P.c,d:P.d,fwd:0,back:0,pay:0,bal:0,xfer:0};
+  const {payer,pend}=payCap(),canRec=!payer&&pend>0&&canEdit(b),recv=o.c===U.uid;
+  const hist=pays.filter(p=>(p.from===P.c&&p.to===P.d)||(p.from===P.d&&p.to===P.c)).sort((x,y)=>y.date.localeCompare(x.date)||y.createdAt.localeCompare(x.createdAt));
+  const amtVal=(keep!==''||P.touched)?keep:(payer&&pend>0?String(pend):'');   // paying: starts at the pending amount, editable
+  const label=payer?'You pay '+esc(nmo(P.c)):esc(nm(P.d))+' paid';
+  const form=(payer||canRec)?`<div class="form-group"><label class="form-label">${label} (₹)</label>
+      <input class="form-input" id="payAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" oninput="onPayInput()" value="${esc(amtVal)}"/>
+      <div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pay-sub" id="payNote"></span>${pend>0?`<button class="split-reset" onclick="payFull()">Full ${fmt(pend)}</button>`:''}</div></div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="payDate" type="date" value="${esc(keepDate||today())}"/></div>
+    <button class="btn btn-primary" onclick="savePayment()" style="margin-bottom:14px">${payer?'Pay':'Save payment'}</button>`:'';
+  const rows=hist.length?hist.map(p=>`<div class="pay-row" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div class="pay-top"><span>${esc(nm(p.from))} paid ${esc(nmo(p.to))} ${fmt(p.amount)}</span></div>
+      <div class="pay-sub">${esc(p.date)}${p.extra>0?' · '+(p.amount-p.extra>0.004?fmt(p.amount-p.extra)+' settled pending · ':'')+fmt(p.extra)+' added to '+esc(poss(p.to))+' income':''}</div></div>
+      ${(p.to===U.uid||p.from===U.uid)?`<button class="close-btn" data-id="${esc(p.id)}" onclick="deletePayment(this.dataset.id)" title="Delete">×</button>`:''}</div>`).join(''):'<div class="pay-sub" style="margin-bottom:6px">No payments in this period</div>';
+  const settled=o.bal<=0.004,anyData=o.fwd||o.back||o.pay;
+  $('sheetInner').innerHTML=`<div class="sheet-title">${payer?'Pay '+esc(fn(P.c)):esc(payLine(o.c,o.d))}<button class="close-btn" onclick="closeSheetNow()">×</button></div>
+    <div class="pend-card" style="margin-bottom:14px"><div class="pend-top"><div style="flex:1"><div class="pend-txt">${settled?(anyData?'Settled':'No pending payments'):(o.d===U.uid?'Pending to pay':'Balance to receive')} · ${esc(per)}</div>
+      <div class="pend-sub">${pairSub(o,recv,settled)}</div></div><div class="pend-amt" style="color:${settled||recv?'var(--green)':'var(--amber)'}">${fmt(o.bal)}</div></div></div>
+    ${form}<div class="section-title" style="margin-bottom:8px">Payment history · ${esc(per)}</div>${rows}`;
+  if(payer||canRec)payPreview();
+}
+function onPayInput(){if(_paySheet)_paySheet.touched=true;payPreview();}
+function payFull(){if(_paySheet)_paySheet.touched=true;$('payAmt').value=payCap().pend;payPreview();}
+function payPreview(){
+  const n=$('payNote');if(!n)return;
+  const P=_paySheet,{payer,pend}=payCap(),amt=parseFloat($('payAmt').value);
+  n.style.color='';n.className='pay-sub';
+  if(!amt){n.textContent=pend>0?'Pending '+fmt(pend):(payer?'No pending · goes to '+poss(P.c)+' income':'');return;}
+  if(amt>pend+0.004){
+    if(!payer){n.style.color='var(--red)';n.textContent='More than the pending '+fmt(pend);return;}
+    n.textContent=(pend>0?fmt(pend)+' settles the pending · ':'')+fmt(r2(amt-pend))+' added to '+poss(P.c)+' income';return;
+  }
+  n.textContent='Balance after this: '+fmt(r2(pend-amt));
+}
+function savePayment(){
+  const b=currentBook(),P=_paySheet;
+  if(!b||!P||!canEdit(b)){toast('Nothing to record');return;}
+  const {payer,pend}=payCap(),amt=r2(parseFloat($('payAmt').value)),date=$('payDate').value;
+  if(!amt||amt<=0){toast('Enter the amount');return;}
+  if(!date){toast('Pick a date');return;}
+  let rec;
+  if(payer){
+    if(P.c===U.uid||!b.members[P.c]){toast('Pick another member');return;}
+    const extra=r2(Math.max(0,amt-pend));
+    rec={from:U.uid,to:P.c,amount:amt,extra,date,createdAt:nowISO()};
+    toast(extra>0?(pend>0?'Paid · '+fmt(extra)+' added to '+fn(P.c)+"'s income":'Sent ✓ added to '+fn(P.c)+"'s income"):'Payment recorded ✓');
+  }else{
+    if(pend<=0){toast('Nothing pending to record');return;}
+    if(amt>pend+0.004){toast('That is more than the pending '+fmt(pend));return;}
+    rec={from:P.d,to:U.uid,amount:amt,extra:0,date,createdAt:nowISO()};
+    toast('Payment recorded ✓');
+  }
+  payCol(b.id).doc().set(rec).catch(dbErr);
+  P.touched=false;$('payAmt').value='';
+}
+function deletePayment(id){
+  const b=currentBook();if(!b||!confirm('Delete this payment? The balance will go back up.'))return;
+  _myDel.add(id);payCol(b.id).doc(id).delete().catch(dbErr);toast('Payment deleted');
+}
+function memberList(b){
+  return Object.entries(b.members).sort((x,y)=>(x[1].role==='owner'?0:1)-(y[1].role==='owner'?0:1)).map(([uid,m])=>({uid,name:m.name||m.email||'Member'}));
+}
+// equal split in paise so the parts always add up exactly
+function equalShares(total,uids){
+  const c=Math.round(total*100),n=uids.length,base=Math.floor(c/n),extra=c-base*n,o={};
+  uids.forEach((u,i)=>{o[u]=(base+(i<extra?1:0))/100;});
+  return o;
+}
+// expense per member for a list of txns (entries without a saved split are shared equally among current members)
+function memberExpense(b,txns){
+  const list=memberList(b),uids=list.map(m=>m.uid),tot={};
+  const paid={},inc={};uids.forEach(u=>{tot[u]=0;paid[u]=0;inc[u]=0;});let other=0;
+  txns.filter(t=>t.type==='income').forEach(t=>{if(t.createdBy in inc)inc[t.createdBy]+=t.amount;});
+  txns.filter(t=>t.type==='expense').forEach(t=>{
+    if(t.createdBy in paid)paid[t.createdBy]+=t.amount;
+    const sp=t.splits||equalShares(t.amount,uids);
+    Object.keys(sp).forEach(u=>{if(u in tot)tot[u]+=sp[u];else other+=sp[u];});
+  });
+  return{list,tot,other,paid,inc};
+}
+// each member's own wallet: income they entered minus the expenses they entered
+function walletOf(b,txns,pays){
+  const m=memberExpense(b,txns),inc={...m.inc},out={...m.paid},xin={},xout={};
+  (pays||[]).forEach(p=>{
+    const e=p.extra||0;if(e<=0.004)return;
+    if(p.to in inc){inc[p.to]+=e;xin[p.to]=(xin[p.to]||0)+e;}
+    if(p.from in out){out[p.from]+=e;xout[p.from]=(xout[p.from]||0)+e;}
+  });
+  return{list:m.list,inc,out,xin,xout};
+}
+function renderMemberBalance(txns,pays){
+  const b=currentBook();
+  if(!b||!isShared(b))return '';
+  const {list,out:paid,inc,xin,xout}=walletOf(b,txns,pays);
+  const cards=list.map(m=>{
+    const bal=r2(inc[m.uid]-paid[m.uid]),c=memColor(m.uid);
+    return `<div class="bal-card" style="border-left-color:${c}"><div class="bal-head"><span class="who-dot" style="background:${c}"></span>${esc(m.name)}${m.uid===U.uid?' (you)':''}</div>
+      <div class="bal-grid"><div><div class="bal-l">Income</div><div class="bal-v" style="color:var(--green)">${fmt(inc[m.uid])}</div></div>
+      <div><div class="bal-l">Expense</div><div class="bal-v" style="color:var(--red)">${fmt(paid[m.uid])}</div></div>
+      <div><div class="bal-l">Balance</div><div class="bal-v" style="color:${bal<0?'var(--red)':'var(--blue)'}">${bal<0?'-':''}${fmt(bal)}</div></div></div>
+      ${(xin[m.uid]>0.004||xout[m.uid]>0.004)?`<div class="pend-sub" style="margin-top:6px;text-align:center">${xin[m.uid]>0.004?'Income incl. '+fmt(xin[m.uid])+' received from members':''}${xin[m.uid]>0.004&&xout[m.uid]>0.004?' · ':''}${xout[m.uid]>0.004?'Expense incl. '+fmt(xout[m.uid])+' sent to members':''}</div>`:''}</div>`;
+  }).join('');
+  return `<div class="section" style="padding-bottom:0"><div class="section-hdr"><div class="section-title">Balance by member</div></div>${cards}</div>`;
+}
+function renderMemberExpense(txns,exp){
+  const b=currentBook();
+  if(!b||!isShared(b))return '';
+  const {list,tot,other,paid}=memberExpense(b,txns);
+  const cards=list.map(m=>{
+    const v=tot[m.uid],pct=exp>0?Math.round(v/exp*100):0;
+    return `<div class="mem-card"><div class="member-avatar">${esc(initials(m.name))}</div>
+      <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="member-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name)}${m.uid===U.uid?' (you)':''}</span><span style="font-weight:700;color:var(--red)">${fmt(v)}</span></div>
+      <div class="pend-sub">Share of expense · Paid out ${fmt(paid[m.uid])}</div>
+      <div class="mem-bar"><div style="width:${pct}%"></div></div></div></div>`;
+  }).join('');
+  const oth=other>0.004?`<div class="mem-card"><div class="member-avatar">?</div><div style="flex:1;font-size:13px">Former members</div><span style="font-weight:700;color:var(--red)">${fmt(other)}</span></div>`:'';
+  return `<div class="section" style="padding-bottom:0"><div class="section-hdr"><div class="section-title">Expense by member</div></div>${cards}${oth}
+    <div class="mem-total"><span>Total expense</span><span style="color:var(--red)">${fmt(exp)}</span></div></div>`;
+}
+const MEM_COLORS=['#3B82F6','#E0509A','#F59E0B','#8B5CF6','#14B8A6','#F97316','#64748B','#84CC16'];
+function memColor(uid){
+  const b=currentBook();if(!b)return '#9CA3AF';
+  const i=Object.keys(b.members).sort().indexOf(uid);
+  return i<0?'#9CA3AF':MEM_COLORS[i%MEM_COLORS.length];
+}
+function hl(str,toks){
+  str=String(str==null?'':str);
+  if(!toks||!toks.length)return esc(str);
+  const re=new RegExp('('+toks.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi');
+  return str.split(re).map((p,i)=>i%2?'<mark class="hit">'+esc(p)+'</mark>':esc(p)).join('');
+}
+function txnRow(t,badge,toks){
+  const b=currentBook(),shared=isShared(b),mc=shared?memColor(t.createdBy):'';
+  const who=shared?((b.members[t.createdBy]&&(b.members[t.createdBy].name||b.members[t.createdBy].email))||t.createdByName||'').split(' ')[0]:'';
+  const by=shared&&who?`<span class="who-chip" style="background:${mc}22;color:${mc}">${hl(who,toks)}</span>`:'';
+  return `<div class="txn-item" data-id="${esc(t.id)}" onclick="openTxnSheet(this.dataset.id)"${shared?` style="border-left:4px solid ${mc}"`:''}>
+    <div class="txn-icon" style="background:${catColor(t.category)}22">${esc(catEmoji(t.category))}</div>
+    <div class="txn-body">
+      <div class="txn-cat">${hl(t.category,toks)}${badge?` <span class="badge badge-${t.type}">${t.type}</span>`:''}${by}</div>
+      <div class="txn-meta">${t.remark?(badge?'💬 ':'')+hl(t.remark,toks):hl(t.date,toks)}</div>
+      ${splitLine(t)}
+    </div>
+    <div class="txn-right"><div class="txn-amt ${t.type}">${t.type==='income'?'+':'-'}${hl(fmt(t.amount),toks)}</div><div class="txn-date">${hl(t.date,toks)}</div></div></div>`;
+}
 function renderDashboard(){
-  const txns=bookTxnsForView(S.currentBookId);
-
-  const totalIncome=txns
-    .filter(t=>t.type==='income')
-    .reduce((s,t)=>s+t.amount,0);
-
-  const totalExpense=txns
-    .filter(t=>t.type==='expense')
-    .reduce((s,t)=>s+t.amount,0);
-
-  const balance=totalIncome-totalExpense;
-
-  const cats=bookCats(S.currentBookId);
+  const txns=viewTxns();
+  const inc=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const bal=inc-exp;
   const catMap={};
-
-  txns
-    .filter(t=>t.type==='expense')
-    .forEach(t=>{
-      catMap[t.category]=(catMap[t.category]||0)+t.amount;
-    });
-
-  const sorted=Object.entries(catMap)
-    .sort((a,b)=>b[1]-a[1]);
-
-  const recent=[...txns]
-    .sort((a,b)=>b.date.localeCompare(a.date))
-    .slice(0,6);
-
-  const recentRows=recent.length
-  ? recent.map(t=>{
-      const idx=cats.indexOf(t.category);
-      const col=CAT_COLORS[idx>=0?idx%CAT_COLORS.length:0];
-
-      const _dIsShared=isSharedBook(t.bookId);
-      const _dBy=_dIsShared&&t.createdByName?`<span style="font-size:10px;color:var(--text3)"> · ${t.createdByName}</span>`:'';
-      return `
-      <div class="txn-item" onclick="openTxnSheet('${t.id}')">
-        <div class="txn-icon" style="background:${col}22">
-          ${catEmoji(t.category)}
-        </div>
-        <div class="txn-body">
-          <div class="txn-cat">${t.category}${_dBy}</div>
-          <div class="txn-meta">${t.remark||t.date}</div>
-        </div>
-        <div class="txn-right">
-          <div class="txn-amt ${t.type}">
-            ${t.type==='income'?'+':'-'}${fmt(t.amount)}
-          </div>
-          <div class="txn-date">${t.date}</div>
-        </div>
-      </div>`;
-    }).join('')
-  : `
-  <div class="empty-state">
-    <div class="empty-icon">📋</div>
-    <div class="empty-text">
-      No transactions yet
-      <br>
-      <small>Tap + to add your first entry</small>
-    </div>
-  </div>`;
-
-  requestAnimationFrame(()=>renderExpenseChart(catMap,totalExpense));
-
-  return `
-    <div class="summary-wrap">
-      <div class="s-card">
-        <div class="s-label">Income</div>
-        <div class="s-val income">${fmt(totalIncome)}</div>
-      </div>
-
-      <div class="s-card">
-        <div class="s-label">Expense</div>
-        <div class="s-val expense">${fmt(totalExpense)}</div>
-      </div>
-
-      <div class="s-card balance-card">
-        <div class="s-label">
-          Balance — ${S.currentMonth==='all'?(_selYear||''):monthLabel(S.currentMonth)}
-        </div>
-
-        <div class="s-val ${balance>=0?'':'negative'}">
-          ${fmtSgn(balance)}
-        </div>
-      </div>
-    </div>
-
-    ${sorted.length ? `
-    <div class="section">
-      <div class="section-hdr">
-        <div class="section-title">
-          Expense Breakdown
-        </div>
-      </div>
-
-      <div style="
-        position:relative;
-        height:280px;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-      ">
-        <canvas id="expenseChart"></canvas>
-
-        <div id="chartCenterText"
-          style="
-            position:absolute;
-            text-align:center;
-            pointer-events:none;
-          ">
-          <div style="
-            font-size:12px;
-            color:var(--text2)">
-            Total Expense
-          </div>
-
-          <div style="
-            font-size:20px;
-            font-weight:700">
-            ${fmt(totalExpense)}
-          </div>
-        </div>
-      </div>
-    </div>`:''}
-
-    <div class="section">
-      <div class="section-hdr">
-        <div class="section-title">
-          Recent entries
-        </div>
-
-        <span class="see-all"
-          onclick="showPage('transactions')">
-          See all
-        </span>
-      </div>
-
-      ${recentRows}
-    </div>
-  `;
+  txns.filter(t=>t.type==='expense').forEach(t=>{catMap[t.category]=(catMap[t.category]||0)+t.amount;});
+  const recent=[...txns].sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
+  const rows=recent.length?recent.map(t=>txnRow(t)).join(''):`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No transactions yet<br><small>${canEdit(currentBook())?'Tap + to add your first entry':'This book is view-only for you'}</small></div></div>`;
+  requestAnimationFrame(()=>renderExpenseChart(catMap));
+  return `<div class="summary-wrap">
+    <div class="s-card"><div class="s-label">Income</div><div class="s-val income">${fmt(inc)}</div></div>
+    <div class="s-card"><div class="s-label">Expense</div><div class="s-val expense">${fmt(exp)}</div></div>
+    <div class="s-card balance-card"><div class="s-label">Balance — ${periodLabel()}</div><div class="s-val ${bal>=0?'':'negative'}">${fmtSgn(bal)}</div></div></div>
+    ${renderMemberBalance(txns,viewPays())}
+    ${renderMemberExpense(txns,exp)}
+    ${renderPending()}
+    ${Object.keys(catMap).length?`<div class="section"><div class="section-hdr"><div class="section-title">Expense Breakdown</div></div>
+      <div style="position:relative;height:280px;display:flex;justify-content:center;align-items:center"><canvas id="expenseChart"></canvas>
+      <div style="position:absolute;text-align:center;pointer-events:none"><div style="font-size:12px;color:var(--text2)">Total Expense</div><div style="font-size:20px;font-weight:700">${fmt(exp)}</div></div></div></div>`:''}
+    <div class="section"><div class="section-hdr"><div class="section-title">Recent entries</div><span class="see-all" onclick="showPage('transactions')">See all</span></div>${rows}</div>`;
 }
 let expenseChart=null;
-
-function renderExpenseChart(catMap,totalExpense){
-
-  const canvas=document.getElementById('expenseChart');
-  if(!canvas) return;
-
-  if(expenseChart){
-    expenseChart.destroy();
-  }
-
+function renderExpenseChart(catMap){
+  if(expenseChart){expenseChart.destroy();expenseChart=null;}
+  const canvas=$('expenseChart');if(!canvas||typeof Chart==='undefined')return;
   const labels=Object.keys(catMap);
-  const data=Object.values(catMap);
-
-  expenseChart=new Chart(canvas,{
-    type:'doughnut',
-
-    data:{
-      labels,
-      datasets:[{
-        data,
-        backgroundColor:CAT_COLORS,
-        borderWidth:0
-      }]
-    },
-
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-
-      cutout:'72%',
-
-      plugins:{
-        legend:{
-          position:'bottom'
-        }
-      }
-    }
-  });
+  const tc=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#111';
+  expenseChart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:Object.values(catMap),backgroundColor:labels.map(catColor),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom',labels:{color:tc}}}}});
 }
-
-let _txnCatFilter='all';
-let _txnSubTab='entries'; // 'entries' | 'compare'
-function setTxnCatFilter(cat){
-  _txnCatFilter=cat;
-  renderPage();
-}
-function setTxnSubTab(tab){
-  _txnSubTab=tab;
-  renderPage();
-}
-function prevMonthKey(m){
-  let[y,mo]=m.split('-').map(Number);
-  mo--;if(mo===0){mo=12;y--;}
-  return y+'-'+String(mo).padStart(2,'0');
-}
+function setTxnCatFilter(c){V.catFilter=c;renderPage();}
+function setTxnSubTab(t){V.txnTab=t;renderPage();}
+function prevMonthKey(m){let[y,mo]=m.split('-').map(Number);mo--;if(mo===0){mo=12;y--;}return y+'-'+String(mo).padStart(2,'0');}
 function compareMonthKey(){
-  if(S.currentMonth!=='all')return S.currentMonth;
-  const months=getBookMonths(S.currentBookId,_selYear||today().slice(0,4));
-  return months[0]||today().slice(0,7);
+  if(V.month!=='all')return V.month;
+  return getBookMonths(V.year||today().slice(0,4))[0]||today().slice(0,7);
+}
+function searchToks(){return String(V.q||'').toLowerCase().split(/\s+/).filter(Boolean);}
+function txnHay(t){
+  const b=currentBook(),m=b&&b.members[t.createdBy];
+  return [t.category,t.remark||'',String(t.amount),fmt(t.amount).replace(/[₹,]/g,''),t.date,monthLabel(t.date.slice(0,7)),t.type,(m&&(m.name||m.email))||t.createdByName||''].join(' ').toLowerCase();
+}
+// pool = this period (or the whole book while searching), narrowed by search words, then by member and category
+function txnData(){
+  const b=currentBook(),toks=searchToks(),searching=toks.length>0;
+  if(V.who!=='all'&&!(b&&b.members[V.who]))V.who='all';
+  const pool=(searching?S.transactions:viewTxns()).slice().sort((a,c)=>c.date.localeCompare(a.date)||(c.createdAt||'').localeCompare(a.createdAt||''));
+  const matched=searching?pool.filter(t=>{const h=txnHay(t);return toks.every(w=>h.includes(w));}):pool;
+  const byWho=V.who==='all'?matched:matched.filter(t=>t.createdBy===V.who);
+  const present=[...new Set(byWho.map(t=>t.category))];
+  if(V.catFilter!=='all'&&!present.includes(V.catFilter))V.catFilter='all';
+  const final=(searching||V.catFilter==='all')?byWho:byWho.filter(t=>t.category===V.catFilter);
+  return{toks,searching,pool,matched,byWho,present,final};
+}
+function renderTxnFilters(){
+  const b=currentBook(),D=txnData();
+  let h='';
+  if(isShared(b)){
+    const list=memberList(b);
+    h+=`<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin:-2px -2px 0">
+      <div class="cat-chip${V.who==='all'?' selected':''}" style="flex-shrink:0" onclick="setTxnWho('all')">👥 All <span style="color:var(--text3)">${D.matched.length}</span></div>
+      ${list.map(m=>{const n=D.matched.filter(t=>t.createdBy===m.uid).length,c=memColor(m.uid);
+        return `<div class="cat-chip${V.who===m.uid?' selected':''}" style="flex-shrink:0" data-u="${esc(m.uid)}" onclick="setTxnWho(this.dataset.u)"><span class="who-dot" style="background:${c}"></span>${esc(String(m.name).split(' ')[0])}${m.uid===U.uid?' (you)':''} <span style="color:var(--text3)">${n}</span></div>`;}).join('')}</div>`;
+  }
+  if(!D.searching&&D.byWho.length)h+=`<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:-2px -2px 0">
+    <div class="cat-chip${V.catFilter==='all'?' selected':''}" style="flex-shrink:0" onclick="setTxnCatFilter('all')">All</div>
+    ${D.present.map(c=>`<div class="cat-chip${V.catFilter===c?' selected':''}" style="flex-shrink:0" data-c="${esc(c)}" onclick="setTxnCatFilter(this.dataset.c)">${esc(catEmoji(c))} ${esc(c)}</div>`).join('')}</div>`;
+  return h;
+}
+function renderTxnResults(){
+  const D=txnData(),txns=D.final,b=currentBook();
+  const who=(V.who!=='all'&&isShared(b))?' · '+esc(fn(V.who)):'';
+  if(!txns.length){
+    return D.searching?`<div class="empty-state" style="margin-top:30px"><div class="empty-icon">🔍</div><div class="empty-text">No entries found for “${esc(V.q.trim())}”<br><small>Searched all months${who?' · '+esc(fn(V.who))+' only':''}</small></div></div>`
+      :`<div class="empty-state" style="margin-top:40px"><div class="empty-icon">📭</div><div class="empty-text">No entries for ${esc(periodLabel())}${who?' · '+esc(fn(V.who)):''}</div></div>`;
+  }
+  const inc=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const parts=[];
+  if(exp>0)parts.push(`<span style="color:var(--red)">-${fmt(exp)}</span>`);
+  if(inc>0)parts.push(`<span style="color:var(--green)">+${fmt(inc)}</span>`);
+  const label=D.searching?'Found':(V.catFilter==='all'?'Total':esc(V.catFilter));
+  return `${D.searching?`<div class="search-info">Searching all months${who}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:10px">
+    <span style="font-size:12px;font-weight:600;color:var(--text2)">${label}${who} (${txns.length})</span>
+    <span style="font-size:14px;font-weight:700">${parts.join(' &nbsp;/&nbsp; ')||fmt(inc-exp)}</span></div>
+    <div class="section">${txns.map(t=>txnRow(t,true,D.toks)).join('')}</div>`;
 }
 function renderTransactions(){
-  const tabsHtml=`<div class="auth-tabs" style="margin-bottom:12px">
-    <div class="auth-tab${_txnSubTab==='entries'?' active':''}" onclick="setTxnSubTab('entries')">Entries</div>
-    <div class="auth-tab${_txnSubTab==='compare'?' active':''}" onclick="setTxnSubTab('compare')">Compare</div>
-  </div>`;
-  if(_txnSubTab==='compare')return tabsHtml+renderCompareTab();
-  const allTxns=bookTxnsForView(S.currentBookId).sort((a,b)=>b.date.localeCompare(a.date));
-  const cats=bookCats(S.currentBookId);
-  const presentCats=cats.filter(c=>allTxns.some(t=>t.category===c));
-  if(_txnCatFilter!=='all'&&!presentCats.includes(_txnCatFilter))_txnCatFilter='all';
-  const filterHtml=allTxns.length?`<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:-2px -2px 0">
-    <div class="cat-chip${_txnCatFilter==='all'?' selected':''}" style="flex-shrink:0" onclick="setTxnCatFilter('all')">All</div>
-    ${presentCats.map(c=>`<div class="cat-chip${_txnCatFilter===c?' selected':''}" style="flex-shrink:0" onclick="setTxnCatFilter('${c.replace(/'/g,"\\'")}')">${catEmoji(c)} ${c}</div>`).join('')}
-  </div>`:'';
-  const txns=_txnCatFilter==='all'?allTxns:allTxns.filter(t=>t.category===_txnCatFilter);
-  if(!txns.length)return`${tabsHtml}${filterHtml}<div class="empty-state" style="margin-top:40px"><div class="empty-icon">📭</div><div class="empty-text">No entries for ${S.currentMonth==='all'?(_selYear||'this period'):monthLabel(S.currentMonth)}</div></div>`;
-  const totalIncome=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const totalExpense=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const netAmt=totalIncome-totalExpense;
-  const totalLabel=_txnCatFilter==='all'?'Total':_txnCatFilter;
-  const summaryParts=[];
-  if(totalExpense>0)summaryParts.push(`<span style="color:var(--red,#e5484d)">-${fmt(totalExpense)}</span>`);
-  if(totalIncome>0)summaryParts.push(`<span style="color:var(--green,#2f9e44)">+${fmt(totalIncome)}</span>`);
-  const summaryHtml=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:10px">
-    <span style="font-size:12px;font-weight:600;color:var(--text2)">${totalLabel} (${txns.length})</span>
-    <span style="font-size:14px;font-weight:700">${summaryParts.join(' &nbsp;/&nbsp; ')||fmt(netAmt)}</span>
-  </div>`;
-  const rows=txns.map(t=>{
-    const idx=cats.indexOf(t.category);
-    const col=CAT_COLORS[idx>=0?idx%CAT_COLORS.length:0];
-    const _isShared=isSharedBook(t.bookId);
-    const _byLine=_isShared&&t.createdByName?`<span style="font-size:10px;color:var(--text3);margin-left:4px">· ${t.createdByName}</span>`:'';
-    const _timeStr=t.createdAt?new Date(t.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-    const _metaExtra=_isShared&&_timeStr?` · ${_timeStr}`:'';
-    return`<div class="txn-item" onclick="openTxnSheet('${t.id}')">
-      <div class="txn-icon" style="background:${col}22">${catEmoji(t.category)}</div>
-      <div class="txn-body">
-        <div class="txn-cat">${t.category} <span class="badge badge-${t.type}">${t.type}</span>${_byLine}</div>
-        <div class="txn-meta">${t.remark?'💬 '+t.remark:t.date}${_metaExtra}</div>
-      </div>
-      <div class="txn-right">
-        <div class="txn-amt ${t.type}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
-        <div class="txn-date">${t.date}</div>
-      </div>
-    </div>`;
-  }).join('');
-  return`${tabsHtml}${filterHtml}${summaryHtml}<div class="section">${rows}</div>`;
+  const tabs=`<div class="sub-tabs" style="margin-bottom:12px">
+    <div class="sub-tab${V.txnTab==='entries'?' active':''}" onclick="setTxnSubTab('entries')">Entries</div>
+    <div class="sub-tab${V.txnTab==='compare'?' active':''}" onclick="setTxnSubTab('compare')">Compare</div></div>`;
+  if(V.txnTab==='compare')return tabs+renderCompareTab();
+  const search=`<div class="search-wrap"><span style="font-size:15px;opacity:.6">🔍</span>
+    <input class="search-input" id="txnSearch" type="search" autocomplete="off" placeholder="Search entries (e.g. sugar, 500, Rahul)" value="${esc(V.q)}" oninput="onTxnSearch(this)"/>
+    <button class="search-clear" id="txnClear" style="display:${V.q?'flex':'none'}" onclick="clearTxnSearch()" aria-label="Clear">×</button></div>`;
+  return `${tabs}${search}<div id="txnFilters">${renderTxnFilters()}</div><div id="txnResults">${renderTxnResults()}</div>`;
 }
+function refreshTxnList(){const f=$('txnFilters'),r=$('txnResults');if(f)f.innerHTML=renderTxnFilters();if(r)r.innerHTML=renderTxnResults();}
+function onTxnSearch(el){V.q=el.value;const c=$('txnClear');if(c)c.style.display=V.q?'flex':'none';refreshTxnList();}
+function clearTxnSearch(){V.q='';const i=$('txnSearch');if(i){i.value='';i.focus();}const c=$('txnClear');if(c)c.style.display='none';refreshTxnList();}
+function setTxnWho(u){V.who=u;refreshTxnList();}
 function renderCompareTab(){
-  const curM=compareMonthKey();
-  const prevM=prevMonthKey(curM);
-  const curTxns=S.transactions.filter(t=>t.bookId===S.currentBookId&&t.date.startsWith(curM));
-  const prevTxns=S.transactions.filter(t=>t.bookId===S.currentBookId&&t.date.startsWith(prevM));
-  function groupByCat(txns,type){
-    const m={};
-    txns.filter(t=>t.type===type).forEach(t=>{m[t.category]=(m[t.category]||0)+t.amount;});
-    return m;
-  }
-  function buildRows(curMap,prevMap,isExpense){
-    const catList=[...new Set([...Object.keys(curMap),...Object.keys(prevMap)])].sort((a,b)=>(curMap[b]||0)-(curMap[a]||0));
-    if(!catList.length)return`<div class="empty-state" style="padding:20px 0"><div class="empty-text">No data</div></div>`;
-    return catList.map(c=>{
-      const cur=curMap[c]||0,prev=prevMap[c]||0;
-      const diff=cur-prev;
-      const pct=prev>0?Math.round((diff/prev)*100):(cur>0?100:0);
-      const flat=diff===0;
-      const up=diff>0;
-      const bad=flat?null:(isExpense?up:!up);
-      const arrow=flat?'→':(up?'▲':'▼');
-      const color=flat?'var(--text2)':(bad?'#e5484d':'#2f9e44');
-      return`<div class="txn-item" style="cursor:default">
-        <div class="txn-icon" style="background:var(--surface2)">${catEmoji(c)}</div>
-        <div class="txn-body">
-          <div class="txn-cat">${c}</div>
-          <div class="txn-meta">Prev: ${fmt(prev)}</div>
-        </div>
-        <div class="txn-right">
-          <div class="txn-amt">${fmt(cur)}</div>
-          <div class="txn-date" style="color:${color};font-weight:600">${arrow} ${Math.abs(pct)}%</div>
-        </div>
-      </div>`;
+  const curM=compareMonthKey(),prevM=prevMonthKey(curM);
+  const cur=S.transactions.filter(t=>t.date.startsWith(curM)),prev=S.transactions.filter(t=>t.date.startsWith(prevM));
+  const group=(a,type)=>{const m={};a.filter(t=>t.type===type).forEach(t=>{m[t.category]=(m[t.category]||0)+t.amount;});return m;};
+  const build=(cm,pm,isExp)=>{
+    const list=[...new Set([...Object.keys(cm),...Object.keys(pm)])].sort((a,b)=>(cm[b]||0)-(cm[a]||0));
+    if(!list.length)return `<div class="empty-state" style="padding:20px 0"><div class="empty-text">No data</div></div>`;
+    return list.map(c=>{
+      const cv=cm[c]||0,pv=pm[c]||0,diff=cv-pv,pct=pv>0?Math.round((diff/pv)*100):(cv>0?100:0);
+      const flat=diff===0,up=diff>0,bad=flat?null:(isExp?up:!up);
+      return `<div class="txn-item" style="cursor:default"><div class="txn-icon" style="background:var(--surface2)">${esc(catEmoji(c))}</div>
+        <div class="txn-body"><div class="txn-cat">${esc(c)}</div><div class="txn-meta">Prev: ${fmt(pv)}</div></div>
+        <div class="txn-right"><div class="txn-amt">${fmt(cv)}</div><div class="txn-date" style="color:${flat?'var(--text2)':(bad?'#e5484d':'#2f9e44')};font-weight:600">${flat?'→':(up?'▲':'▼')} ${Math.abs(pct)}%</div></div></div>`;
     }).join('');
-  }
-  const curExp=groupByCat(curTxns,'expense'),prevExp=groupByCat(prevTxns,'expense');
-  const curInc=groupByCat(curTxns,'income'),prevInc=groupByCat(prevTxns,'income');
-  return`<div style="text-align:center;margin-bottom:14px;font-size:13px;color:var(--text2);font-weight:500">${monthLabel(curM)} vs ${monthLabel(prevM)}</div>
-  <div style="font-size:12px;font-weight:700;color:var(--text2);margin:4px 4px 6px;letter-spacing:.5px">EXPENSES</div>
-  <div class="section">${buildRows(curExp,prevExp,true)}</div>
-  <div style="font-size:12px;font-weight:700;color:var(--text2);margin:16px 4px 6px;letter-spacing:.5px">INCOME</div>
-  <div class="section">${buildRows(curInc,prevInc,false)}</div>`;
+  };
+  return `<div style="text-align:center;margin-bottom:14px;font-size:13px;color:var(--text2);font-weight:500">${monthLabel(curM)} vs ${monthLabel(prevM)}</div>
+  <div style="font-size:12px;font-weight:700;color:var(--text2);margin:4px 4px 6px;letter-spacing:.5px">EXPENSES</div><div class="section">${build(group(cur,'expense'),group(prev,'expense'),true)}</div>
+  <div style="font-size:12px;font-weight:700;color:var(--text2);margin:16px 4px 6px;letter-spacing:.5px">INCOME</div><div class="section">${build(group(cur,'income'),group(prev,'income'),false)}</div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  CATEGORIES (stored on the book, shared by all members)
+// ═══════════════════════════════════════════════
+function catRows(list,type,edit){
+  return list.map((c,i)=>`<div class="manage-cat-item"><div class="cat-dot" style="background:${catPalette()[i%catPalette().length]};width:10px;height:10px"></div>
+    <span class="cat-name">${esc(catEmoji(c))} ${esc(c)}</span>
+    ${edit?`<div class="cat-menu-wrap"><button class="cat-menu-btn" data-c="${esc(c)}" data-type="${type}" onclick="toggleCatMenu(event,this.dataset.c,this.dataset.type)">⋮</button></div>`:''}</div>`).join('');
 }
 function renderCategoriesPage(){
-
-  const expenseCats=
-    bookCats(
-      S.currentBookId,
-      'expense'
-    );
-
-  const incomeCats=
-    bookCats(
-      S.currentBookId,
-      'income'
-    );
-
-  const expenseRows=
-    expenseCats.map((c,i)=>`
-    <div class="manage-cat-item">
-
-      <div class="cat-dot"
-      style="
-      background:${CAT_COLORS[i%CAT_COLORS.length]};
-      width:10px;
-      height:10px">
-      </div>
-
-      <span class="cat-name">
-        ${catEmoji(c)} ${c}
-      </span>
-
-      <div class="cat-menu-wrap">
-
-        <button
-          class="cat-menu-btn"
-          onclick="toggleCatMenu(event,'${c}','expense')">
-          ⋮
-        </button>
-
-      </div>
-    </div>
-  `).join('');
-
-  const incomeRows=
-    incomeCats.map((c,i)=>`
-    <div class="manage-cat-item">
-
-      <div class="cat-dot"
-      style="
-      background:${CAT_COLORS[i%CAT_COLORS.length]};
-      width:10px;
-      height:10px">
-      </div>
-
-      <span class="cat-name">
-        ${catEmoji(c)} ${c}
-      </span>
-
-      <div class="cat-menu-wrap">
-
-        <button
-          class="cat-menu-btn"
-          onclick="toggleCatMenu(event,'${c}','income')">
-          ⋮
-        </button>
-
-      </div>
-    </div>
-  `).join('');
-
-  return `
-  <div class="section">
-
-    <div class="section-title">
-      Expense Categories
-    </div>
-
-    ${expenseRows}
-
-    <div class="add-row" style="margin-top:12px">
-      <input
-        class="form-input"
-        id="newExpenseCat"
-        placeholder="Add expense category"
-      />
-
-      <button
-        class="btn-sq"
-        onclick="addCat('expense')">
-        +
-      </button>
-    </div>
-
-    <hr style="margin:22px 0">
-
-    <div class="section-title">
-      Income Categories
-    </div>
-
-    ${incomeRows}
-
-    <div class="add-row" style="margin-top:12px">
-      <input
-        class="form-input"
-        id="newIncomeCat"
-        placeholder="Add income category"
-      />
-
-      <button
-        class="btn-sq"
-        onclick="addCat('income')">
-        +
-      </button>
-    </div>
-
-  </div>`;
+  const b=currentBook(),edit=canEdit(b);
+  const add=t=>edit?`<div class="add-row" style="margin-top:12px"><input class="form-input" id="new${t==='income'?'Income':'Expense'}Cat" maxlength="40" placeholder="Add ${t} category"/><button class="btn-sq" onclick="addCat('${t}')">+</button></div>`:'';
+  return `<div class="section">${edit?'':'<div style="font-size:12px;color:var(--text3);margin-bottom:10px">View-only: ask the owner for Editor access to change categories.</div>'}
+    <div class="section-title">Expense Categories</div>${catRows(b.categories.expense,'expense',edit)}${add('expense')}
+    <hr style="margin:22px 0"><div class="section-title">Income Categories</div>${catRows(b.categories.income,'income',edit)}${add('income')}</div>`;
 }
-function deleteCat(c,type){
-
-  if(guestBlocked()) return;
-
-  const id=S.currentBookId;
-
-  S.categories[id][type] =
-    S.categories[id][type]
-      .filter(x=>x!==c);
-
-  saveUserData();
-  renderPage();
-
-  toast('Category removed');
-}
+function cloneCats(b){return{expense:[...b.categories.expense],income:[...b.categories.income],v:b.categories.v||0};}
+function saveCats(id,cats){return bookRef(id).update({categories:cats}).catch(dbErr);}
 function addCat(type){
-
-  if(guestBlocked()) return;
-
-  const inp=document.getElementById(
-    type==='income'
-    ? 'newIncomeCat'
-    : 'newExpenseCat'
-  );
-
-  const n=inp.value.trim();
-
-  if(!n){
-    toast('Enter category name');
-    return;
-  }
-
-  const id=S.currentBookId;
-
-  if(!S.categories[id]){
-    S.categories[id]={
-      expense:[...DEFAULT_EXPENSE_CATS],
-      income:[...DEFAULT_INCOME_CATS]
-    };
-  }
-
-  if(S.categories[id][type].includes(n)){
-    toast('Category already exists');
-    return;
-  }
-
-  S.categories[id][type].push(n);
-
-  inp.value='';
-
-  saveUserData();
-  renderPage();
-
-  toast(n+' added ✓');
+  const b=currentBook();if(!canEdit(b)){toast('View-only access');return;}
+  const inp=$(type==='income'?'newIncomeCat':'newExpenseCat'),n=inp.value.trim().slice(0,40);
+  if(!n){toast('Enter category name');return;}
+  const cats=cloneCats(b);
+  if(cats[type].some(x=>x.toLowerCase()===n.toLowerCase())){toast('Category already exists');return;}
+  cats[type].push(n);inp.value='';
+  saveCats(b.id,cats);toast(n+' added ✓');
 }
 function toggleCatMenu(e,c,type){
-
-  e.stopPropagation();
-
-  closeAllCatMenus();
-
-  const btn=e.currentTarget;
-  const rect=btn.getBoundingClientRect();
-
-  const menu=document.createElement('div');
-  menu.className='cat-popup-menu';
-  menu.id='activeCatMenu';
-
-  const renameBtn=document.createElement('button');
-  renameBtn.className='cat-popup-item';
-  renameBtn.innerHTML='✏️ Rename Category';
-
-  renameBtn.addEventListener('click',function(ev){
-    ev.stopPropagation();
-    renameCategory(c,type);
-  });
-
-  const deleteBtn=document.createElement('button');
-  deleteBtn.className='cat-popup-item delete';
-  deleteBtn.innerHTML='🗑 Delete Category';
-
-  deleteBtn.addEventListener('click',function(ev){
-    ev.stopPropagation();
-    confirmDeleteCategory(c,type);
-  });
-
-  menu.appendChild(renameBtn);
-  menu.appendChild(deleteBtn);
-
+  e.stopPropagation();closeAllCatMenus();
+  const rect=e.currentTarget.getBoundingClientRect();
+  const menu=document.createElement('div');menu.className='cat-popup-menu';menu.id='activeCatMenu';
+  const mk=(cls,txt,fn)=>{const x=document.createElement('button');x.className=cls;x.textContent=txt;x.addEventListener('click',ev=>{ev.stopPropagation();fn(c,type);});menu.appendChild(x);};
+  mk('cat-popup-item','✏️ Rename Category',renameCategory);
+  mk('cat-popup-item delete','🗑 Delete Category',confirmDeleteCategory);
   document.body.appendChild(menu);
-
-  menu.style.top=
-    (rect.bottom+6)+'px';
-
-  const left=Math.min(
-    rect.left,
-    window.innerWidth-180
-  );
-
-  menu.style.left=
-    left+'px';
-
-  setTimeout(()=>{
-    document.addEventListener(
-      'click',
-      closeAllCatMenus,
-      {once:true}
-    );
-  },50);
+  menu.style.top=(rect.bottom+6)+'px';menu.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-180))+'px';
+  setTimeout(()=>document.addEventListener('click',closeAllCatMenus,{once:true}),50);
 }
-function closeAllCatMenus(){
-
-  const old=
-    document.getElementById(
-      'activeCatMenu'
-    );
-
-  if(old) old.remove();
-}
-
+function closeAllCatMenus(){const o=$('activeCatMenu');if(o)o.remove();}
 function confirmDeleteCategory(c,type){
-
   closeAllCatMenus();
-
-  const hasTransactions=
-    S.transactions.some(t=>
-      t.bookId===
-      S.currentBookId &&
-      t.category===c
-    );
-
-  let msg=
-`Type "${c}" to confirm deletion`;
-
-  if(hasTransactions){
-
-    msg=
-`⚠ Category contains transactions.
-
-Type "${c}" to delete permanently`;
-  }
-
-  const entered=
-    prompt(msg);
-
-  if(
-    entered===null
-  ) return;
-
-  if(
-    entered.trim()!==c
-  ){
-    toast(
-      'Category name mismatch'
-    );
-    return;
-  }
-
-  const bookId=
-    S.currentBookId;
-
-  if(
-    !S.categories[bookId] ||
-    !S.categories[bookId][type]
-  ){
-    toast('Category error');
-    return;
-  }
-
-  S.categories[bookId][type]=
-    S.categories[bookId][type]
-      .filter(
-        item=>item!==c
-      );
-
-  saveUserData();
-  renderPage();
-
-  toast(
-    c+' deleted ✓'
-  );
+  const b=currentBook();if(!canEdit(b))return;
+  const used=S.transactions.some(t=>t.type===type&&t.category===c);
+  const entered=prompt(used?`⚠ Some entries use "${c}". They are kept, but the category will no longer be selectable.\n\nType "${c}" to delete it`:`Type "${c}" to confirm deletion`);
+  if(entered===null)return;
+  if(entered.trim()!==c){toast('Category name mismatch');return;}
+  const cats=cloneCats(b);cats[type]=cats[type].filter(x=>x!==c);
+  saveCats(b.id,cats);toast(c+' deleted ✓');
+}
+function renameCategory(c,type){
+  closeAllCatMenus();
+  const b=currentBook();if(!canEdit(b))return;
+  const nn=prompt('Rename category',c);
+  if(!nn||!nn.trim())return;
+  const name=nn.trim().slice(0,40);
+  if(name===c)return;
+  const cats=cloneCats(b);
+  if(cats[type].some(x=>x.toLowerCase()===name.toLowerCase())){toast('Category already exists');return;}
+  const i=cats[type].indexOf(c);if(i<0){toast('Category not found');return;}
+  cats[type][i]=name;
+  saveCats(b.id,cats);
+  runChunks(S.transactions.filter(t=>t.type===type&&t.category===c),(bt,t)=>bt.update(txCol(b.id).doc(t.id),{category:name})).catch(dbErr);
+  toast('Category renamed ✓');
 }
 
-function renameCategory(c,type){
-
-  closeAllCatMenus();
-
-  const newName=prompt(
-    'Rename category',
-    c
-  );
-
-  if(
-    !newName ||
-    !newName.trim()
-  ) return;
-
-  const cleanName=
-    newName.trim();
-
-  if(cleanName===c)
-    return;
-
-  const bookId=
-    S.currentBookId;
-
-  if(
-    !S.categories[bookId] ||
-    !S.categories[bookId][type]
-  ){
-    toast('Category error');
-    return;
-  }
-
-  const cats=
-    S.categories[bookId][type];
-
-  if(
-    cats.includes(cleanName)
-  ){
-    toast(
-      'Category already exists'
-    );
-    return;
-  }
-
-  const index=
-    cats.indexOf(c);
-
-  if(index===-1){
-    toast('Category not found');
-    return;
-  }
-
-  cats[index]=cleanName;
-
-  // update old transactions
-  S.transactions.forEach(t=>{
-
-    if(
-      t.bookId===bookId &&
-      t.category===c
-    ){
-      t.category=
-        cleanName;
-    }
-  });
-
-  saveUserData();
-  renderPage();
-
-  toast(
-    'Category renamed ✓'
-  );
+// ═══════════════════════════════════════════════
+//  PROFILE
+// ═══════════════════════════════════════════════
+function syncLabel(){
+  if(!navigator.onLine)return{t:'Offline — saved on device',c:'var(--amber)'};
+  if(sync.books||sync.txns)return{t:'Syncing…',c:'var(--amber)'};
+  return{t:'Synced to cloud',c:'var(--green)'};
 }
 function renderProfilePage(){
-  const u=S.user;
-  const book=currentBook();
-  const totalTxns=S.transactions.filter(t=>t.bookId===S.currentBookId).length;
-  return`<div class="profile-section">
-    <div class="profile-card">
-      <div class="profile-head">
-        <div class="profile-avatar">${u.initials||u.name.slice(0,2).toUpperCase()}</div>
-        <div style="flex:1">
-          <div class="profile-name">${u.name||'User'}</div>
-          <div class="profile-email">${u.email}</div>
-        </div>
-        <button onclick="openEditProfileSheet()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:14px;font-weight:600;padding:6px">Edit</button>
-      </div>
-      <div class="info-row"><span class="label">Active Book</span><span class="value">${book.emoji} ${book.name}</span></div>
-      <div class="info-row"><span class="label">Total books</span><span class="value">${S.books.length}</span></div>
-      <div class="info-row"><span class="label">Entries (this book)</span><span class="value">${totalTxns}</span></div>
-      <div class="info-row"><span class="label">Backup</span><span class="value"><span class="sync-status"><span class="sync-dot"></span>Saved locally</span></span></div>
-    </div>
-    <div class="profile-card">
-  <div class="section-title" style="margin-bottom:12px">Book Options</div>
-
-  <button class="btn btn-outline" style="margin-bottom:8px" onclick="openShareSheet()">
-    👥 Share / Invite Members
-  </button>
-
-  <button class="btn btn-outline" style="margin-bottom:8px" onclick="openBooksSheet()">
-    📚 Switch / Manage Books
-  </button>
-
-  <button class="btn btn-outline" style="margin-bottom:8px" onclick="exportCSV()">
-    📤 Export as CSV
-  </button>
-
-  <button class="btn btn-primary" onclick="exportPDF()">
-    📄 Export as PDF
-  </button>
-</div>
-    <div class="profile-card">
-      <button class="btn btn-danger" onclick="confirmLogout()">Sign Out</button>
-    </div>
-  </div>`;
+  const b=currentBook(),s=syncLabel();
+  return `<div class="profile-section"><div class="profile-card">
+    <div class="profile-head"><div class="profile-avatar">${esc(initials(U.name))}</div>
+      <div style="flex:1;min-width:0"><div class="profile-name">${esc(U.name)}</div><div class="profile-email" style="overflow:hidden;text-overflow:ellipsis">${esc(U.email)}</div></div>
+      <button onclick="openEditProfileSheet()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:14px;font-weight:600;padding:6px">Edit</button></div>
+    <div class="info-row"><span class="label">Active Book</span><span class="value">${esc(b.emoji)} ${esc(b.name)}</span></div>
+    <div class="info-row"><span class="label">Your role</span><span class="value">${roleLabel(myRole(b))}</span></div>
+    <div class="info-row"><span class="label">Members</span><span class="value">${b.memberIds.length}</span></div>
+    <div class="info-row"><span class="label">Total books</span><span class="value">${S.books.length}</span></div>
+    <div class="info-row"><span class="label">Entries (this book)</span><span class="value">${S.transactions.length}</span></div>
+    <div class="info-row"><span class="label">Offline storage</span><span class="value">${persistState==='on'?'On':persistState==='off'?'Not available':'Starting…'}</span></div>
+    <div class="info-row"><span class="label">Cloud sync</span><span class="value"><span class="sync-status" style="color:${s.c}"><span class="sync-dot" style="background:${s.c}"></span>${s.t}</span></span></div></div>
+  <div class="profile-card"><div class="section-title" style="margin-bottom:12px">Appearance</div>
+    <div class="theme-seg">${['light','dark','auto'].map(m=>`<button class="theme-opt ${themeMode()===m?'active':''}" onclick="setTheme('${m}')">${m==='light'?'☀️ Light':m==='dark'?'🌙 Dark':'⚙️ Auto'}</button>`).join('')}</div></div>
+  <div class="profile-card"><div class="section-title" style="margin-bottom:12px">Notifications</div>
+    <label class="info-row" style="cursor:pointer;border-bottom:none"><span class="label">Popup when others add, edit or pay</span><input type="checkbox" ${notifOn()?'checked':''} onchange="setNotifOn(this.checked)" style="width:20px;height:20px;accent-color:var(--blue)"/></label></div>
+  <div class="profile-card"><div class="section-title" style="margin-bottom:12px">Book Options</div>
+    <button class="btn btn-outline" style="margin-bottom:8px" onclick="openShareSheet()">👥 Share / Members</button>
+    <button class="btn btn-outline" style="margin-bottom:8px" onclick="openBooksSheet()">📚 Manage Books</button>
+    <button class="btn btn-outline" style="margin-bottom:8px" onclick="exportCSV()">📤 Export as CSV</button>
+    <button class="btn btn-primary" onclick="exportPDF()">📄 Export as PDF</button></div>
+  <div class="profile-card"><button class="btn btn-danger" onclick="confirmLogout()">Sign Out</button></div></div>`;
 }
-
-function confirmLogout(){
-  if(confirm('Sign out of Fiberplane?'))logout();
-}
-
 function openEditProfileSheet(){
-  const u=S.user;
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">Edit Profile
-      <button class="close-btn" onclick="closeSheetNow()">×</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Full Name</label>
-      <input class="form-input" id="editProfileName" placeholder="Your name" value="${u.name||''}" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">Email</label>
-      <input class="form-input" value="${u.email}" disabled style="opacity:0.6" />
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Email cannot be changed</div>
-    </div>
-    <button class="btn btn-primary" onclick="saveProfileChanges()">Save Changes</button>
-  `;
-  document.getElementById('sheetBg').classList.add('open');
+  $('sheetInner').innerHTML=`<div class="sheet-title">Edit Profile<button class="close-btn" onclick="closeSheetNow()">×</button></div>
+    <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="editProfileName" maxlength="60" value="${esc(U.name)}"/></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${esc(U.email)}" disabled style="opacity:.6"/></div>
+    <button class="btn btn-primary" onclick="saveProfileChanges()">Save Changes</button>`;
+  openSheet();
 }
-
-async function saveProfileChanges(){
-  const name=document.getElementById('editProfileName').value.trim();
+function saveProfileChanges(){
+  const name=$('editProfileName').value.trim();
   if(!name){toast('Enter your name');return;}
-  S.user.name=name;
-  S.user.initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  document.getElementById('userAvatar').textContent=S.user.initials;
-  // Update in Firebase users node
-  if(window.db && S.user.id){
-    try{
-      await window.dbSet(window.dbRef(window.db,'users/'+S.user.id),{name,email:S.user.email});
-    }catch(e){}
-  }
-  // Update in localStorage users list
-  const users=getUsers();
-  const ui=users.findIndex(u=>u.id===S.user.id);
-  if(ui>=0){users[ui].name=name;users[ui].initials=S.user.initials;saveUsers(users);}
-  saveUserData();
-  toast('Profile updated ✓');
-  closeSheetNow();
+  auth.currentUser.updateProfile({displayName:name}).then(()=>{
+    U.name=name;
+    S.books.forEach(b=>{if(b.members[U.uid])bookRef(b.id).update({['members.'+U.uid+'.name']:name}).catch(()=>{});});
+    syncEmailIndex();
+    refreshHeader();toast('Profile updated ✓');closeSheetNow();
+  }).catch(dbErr);
 }
 
 // ═══════════════════════════════════════════════
-//  TRANSACTION SHEET
+//  ENTRY SHEET
 // ═══════════════════════════════════════════════
-let _txnType='expense';
-let _selCat='';
-
-function openTxnSheet(txnId){
-  if(!requireLogin()) return;
-  const ex=txnId?S.transactions.find(t=>t.id===txnId):null;
-  _txnType=ex?ex.type:'expense';
-  _selCat=ex?ex.category:'';
-  const cats=bookCats(S.currentBookId);
-
-  document.getElementById('sheetInner').innerHTML=`
-    <div class="sheet-title">${ex?'Edit Entry':'Add Entry'}
-      <button class="close-btn" onclick="closeSheetNow()">×</button>
+let _txnType='expense',_selCat='',_editTxn=null;
+// expenses can only be changed by whoever entered them; income entries can be edited by any editor.
+// (book owner may also fix entries whose author has left the book)
+function canEditTxn(t,b){
+  b=b||currentBook();
+  if(!b||!canEdit(b))return false;
+  return t.type==='income'||t.createdBy===U.uid||(isOwner(b)&&!b.members[t.createdBy]);
+}
+function openTxnView(t){
+  const b=currentBook(),who=((b.members[t.createdBy]&&(b.members[t.createdBy].name||b.members[t.createdBy].email))||t.createdByName||'another member').split(' ')[0];
+  _editTxn=null;_paySheet=null;
+  $('sheetInner').innerHTML=`<div class="sheet-title">${esc(catEmoji(t.category))} ${esc(t.category)}<button class="close-btn" onclick="closeSheetNow()">×</button></div>
+    <div class="pend-card" style="margin-bottom:12px">
+      <div class="info-row"><span class="label">Amount</span><span class="value" style="font-weight:700;color:var(--red)">-${fmt(t.amount)}</span></div>
+      <div class="info-row"><span class="label">Date</span><span class="value">${esc(t.date)}</span></div>
+      <div class="info-row"><span class="label">Added by</span><span class="value"><span class="who-chip" style="margin:0;background:${memColor(t.createdBy)}22;color:${memColor(t.createdBy)}">${esc(who)}</span></span></div>
+      ${t.remark?`<div class="info-row"><span class="label">Remark</span><span class="value">${esc(t.remark)}</span></div>`:''}
+      ${splitLine(t)?`<div class="info-row"><span class="label">Split</span><span class="value">${splitLine(t).replace(/<[^>]*>/g,'')}</span></div>`:''}
     </div>
+    <div class="split-hint" style="margin-bottom:12px">🔒 Only ${esc(who)} can edit or delete this entry.</div>
+    <button class="btn btn-ghost" onclick="closeSheetNow()">Close</button>`;
+  openSheet();
+}
+function openTxnSheet(txnId){
+  const b=currentBook();
+  if(!b||!canEdit(b)){toast('You have view-only access to this book');return;}
+  const ex=txnId?S.transactions.find(t=>t.id===txnId):null;
+  if(ex&&!canEditTxn(ex,b)){openTxnView(ex);return;}
+  _editTxn=ex;_txnType=ex?ex.type:'expense';_selCat=ex?ex.category:'';
+  $('sheetInner').innerHTML=`<div class="sheet-title">${ex?'Edit Entry':'Add Entry'}<button class="close-btn" onclick="closeSheetNow()">×</button></div>
     <div class="type-toggle">
       <button class="type-btn ${_txnType==='income'?'active-income':''}" id="btnI" onclick="setTxnType('income')">↑ Income</button>
-      <button class="type-btn ${_txnType==='expense'?'active-expense':''}" id="btnE" onclick="setTxnType('expense')">↓ Expense</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Amount (₹)</label>
-      <input class="form-input" id="fAmt" type="number" inputmode="decimal" placeholder="0.00" value="${ex?ex.amount:''}" min="0" step="0.01"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Category</label>
-      <div class="cat-grid" id="catGrid"></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Date</label>
-      <input class="form-input" id="fDate" type="date" value="${ex?ex.date:today()}"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Remark <span style="color:var(--text3)">(optional)</span></label>
-      <input class="form-input" id="fRemark" type="text" placeholder="Add a note..." value="${ex?ex.remark||'':''}"/>
-    </div>
-    ${ex?`<button class="btn btn-danger" onclick="deleteTxn('${ex.id}')" style="margin-bottom:8px">Delete Entry</button>`:''}
-    <button class="btn btn-primary" onclick="saveTxn('${txnId||''}')">Save Entry</button>
-  `;
-  renderCatGrid();
-  document.getElementById('sheetBg').classList.add('open');
-  setTimeout(()=>{try{document.getElementById('fAmt').focus();}catch{}},300);
+      <button class="type-btn ${_txnType==='expense'?'active-expense':''}" id="btnE" onclick="setTxnType('expense')">↓ Expense</button></div>
+    <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-input" id="fAmt" type="number" inputmode="decimal" placeholder="0.00" value="${ex?ex.amount:''}" min="0" step="0.01" oninput="onAmtInput()"/></div>
+    <div id="splitBox"></div>
+    <div class="form-group"><label class="form-label">Category</label><div class="cat-grid" id="catGrid"></div></div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="fDate" type="date" value="${ex?ex.date:today()}"/></div>
+    <div class="form-group"><label class="form-label">Remark <span style="color:var(--text3)">(optional)</span></label><input class="form-input" id="fRemark" maxlength="500" placeholder="Add a note..." value="${ex?esc(ex.remark):''}"/></div>
+    ${ex?`<button class="btn btn-danger" data-id="${esc(ex.id)}" onclick="deleteTxn(this.dataset.id)" style="margin-bottom:8px">Delete Entry</button>`:''}
+    <button class="btn btn-primary" data-id="${ex?esc(ex.id):''}" onclick="saveTxn(this.dataset.id)">Save Entry</button>`;
+  initSplit(ex);renderCatGrid();
+  if(ex&&ex.createdBy!==U.uid){const be=$('btnE');if(be){be.disabled=true;be.style.opacity='.4';}}   // someone else's income stays income
+  openSheet();
+  setTimeout(()=>{try{$('fAmt').focus();}catch(e){}},300);
 }
-
+// ── split state: manual = uids whose amount the user typed; vals = current amount text per uid
+let _split={manual:{},vals:{},preset:'equal'};
+function splitActive(){const b=currentBook();return !!b&&isShared(b)&&_txnType==='expense';}
+function payerUid(){return _editTxn&&_editTxn.createdBy?_editTxn.createdBy:U.uid;}
+function splitKey(){return 'flyover_split_'+S.currentBookId;}
+// preset: 'equal' | 'me' (payer bears it all, no split) | <uid> (that member owes the full amount) | 'custom'
+function fillPreset(){
+  const b=currentBook();if(!b)return;
+  const uids=memberList(b).map(m=>m.uid),amt=parseFloat(($('fAmt')||{}).value)||0,p=_split.preset;
+  _split.manual={};
+  if(p==='equal'||p==='custom'){recalcSplit();return;}
+  const target=p==='me'?payerUid():p,full=Math.round(amt*100)/100;
+  uids.forEach(u=>{_split.vals[u]=amt?String(u===target?full:0):'';});
+}
+function detectPreset(ex,uids){
+  const eq=equalShares(ex.amount,uids);
+  if(uids.every(u=>Math.abs((ex.splits[u]||0)-eq[u])<0.005))return 'equal';
+  const full=uids.find(u=>Math.abs((ex.splits[u]||0)-ex.amount)<0.005&&uids.every(v=>v===u||(ex.splits[v]||0)<0.005));
+  return full?(full===ex.createdBy?'me':full):'custom';
+}
+function initSplit(ex){
+  const b=currentBook();_split={manual:{},vals:{},preset:'equal'};
+  if(!b||!isShared(b))return;
+  const uids=memberList(b).map(m=>m.uid);
+  if(ex&&ex.type==='expense'&&ex.splits){
+    _split.preset=detectPreset(ex,uids);
+    uids.forEach(u=>{_split.vals[u]=String(ex.splits[u]||0);if(_split.preset==='custom')_split.manual[u]=true;});
+  }else{
+    let p=lsGet(splitKey())||'equal';   // remembered per book on this device (e.g. couples keep "Only me")
+    if(p!=='equal'&&p!=='me'&&(!uids.includes(p)||p===U.uid))p='equal';
+    _split.preset=p;fillPreset();
+  }
+  renderSplitBox();
+}
+function recalcSplit(){
+  const b=currentBook();if(!b)return;
+  const uids=memberList(b).map(m=>m.uid),amt=parseFloat(($('fAmt')||{}).value)||0;
+  const free=uids.filter(u=>!_split.manual[u]);
+  const locked=uids.filter(u=>_split.manual[u]).reduce((s,u)=>s+(parseFloat(_split.vals[u])||0),0);
+  if(!free.length)return;
+  const rem=Math.max(0,Math.round((amt-locked)*100)/100);
+  const sh=equalShares(rem,free);
+  free.forEach(u=>{_split.vals[u]=amt?String(sh[u]):'';});
+}
+function onAmtInput(){
+  if(!splitActive())return;
+  if(_split.preset==='custom')_split.preset='equal';   // typed shares are reset by a new amount; presets are kept
+  fillPreset();renderSplitBox();
+}
+function setSplitPreset(p){
+  _split.preset=p;fillPreset();renderSplitBox();lsSet(splitKey(),p);
+}
+function resetSplit(){setSplitPreset('equal');}
+function onSplitInput(uid,el){
+  _split.preset='custom';_split.manual[uid]=true;_split.vals[uid]=el.value;
+  const b=currentBook(),uids=memberList(b).map(m=>m.uid);
+  if(!uids.every(u=>_split.manual[u]))recalcSplit();
+  uids.forEach(u=>{const i=document.querySelector('.split-input[data-u="'+u+'"]');if(i&&i!==el){i.value=_split.vals[u];i.classList.toggle('manual',!!_split.manual[u]);}});
+  el.classList.add('manual');
+  document.querySelectorAll('.split-chip').forEach(c=>c.classList.remove('on'));
+  const h=$('splitHint');if(h)h.textContent='Custom amounts';
+  updateSplitNote();
+}
+function splitTotals(){
+  const b=currentBook(),uids=memberList(b).map(m=>m.uid);
+  const amt=Math.round((parseFloat($('fAmt').value)||0)*100),sum=Math.round(uids.reduce((s,u)=>s+(parseFloat(_split.vals[u])||0),0)*100);
+  return{amt,sum,diff:amt-sum};
+}
+function updateSplitNote(){
+  const n=$('splitNote');if(!n)return;
+  const {amt,diff}=splitTotals();
+  if(!amt){n.className='split-note';n.textContent='Enter an amount to see the split';}
+  else if(diff===0){n.className='split-note';n.textContent='✓ Adds up to '+fmt(amt/100);}
+  else{n.className='split-note err';n.textContent=(diff>0?'₹'+(diff/100).toFixed(2)+' left to assign':'₹'+(Math.abs(diff)/100).toFixed(2)+' over the amount');}
+  const b=currentBook(),list=memberList(b),tot=amt/100;
+  list.forEach(m=>{const e=document.querySelector('.split-pct[data-u="'+m.uid+'"]');if(e)e.textContent=tot?Math.round((parseFloat(_split.vals[m.uid])||0)/tot*100)+'%':'';});
+}
+function splitHintText(){
+  const p=_split.preset,me=payerUid(),who=me===U.uid?'you':fn(me);
+  if(p==='equal')return 'Everyone pays an equal share';
+  if(p==='me')return 'No split · nobody has to pay '+who+' back';
+  if(p==='custom')return 'Custom amounts';
+  return fn(p)+' will pay '+who+' the full amount';
+}
+function renderSplitBox(){
+  const box=$('splitBox');if(!box)return;
+  if(!splitActive()){box.innerHTML='';return;}
+  const b=currentBook(),me=payerUid(),first=m=>String(m.name||'').split(' ')[0];
+  const chips=[{p:'equal',l:'⚖️ Equal'},{p:'me',l:me===U.uid?'👤 Only me (no split)':'👤 Only '+fn(me)}]
+    .concat(memberList(b).filter(m=>m.uid!==me).map(m=>({p:m.uid,l:'👤 Only '+first(m)+(m.uid===U.uid?' (you)':'')})));
+  box.innerHTML=`<div class="split-box"><div class="split-hdr"><span class="split-title">Split · who pays for this?</span></div>
+    <div class="split-chips">${chips.map(c=>`<button type="button" class="split-chip ${_split.preset===c.p?'on':''}" data-p="${esc(c.p)}" onclick="setSplitPreset(this.dataset.p)">${esc(c.l)}</button>`).join('')}</div>
+    <div class="split-hint" id="splitHint">${esc(splitHintText())}</div>
+    ${memberList(b).map(m=>`<div class="split-row"><span class="split-name">${esc(m.name)}${m.uid===U.uid?' (you)':''}</span><span class="split-pct" data-u="${esc(m.uid)}"></span>
+      <input class="split-input ${_split.manual[m.uid]?'manual':''}" data-u="${esc(m.uid)}" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${esc(_split.vals[m.uid]||'')}" oninput="onSplitInput(this.dataset.u,this)"/></div>`).join('')}
+    <div class="split-note" id="splitNote"></div></div>`;
+  updateSplitNote();
+}
 function renderCatGrid(){
-
-  const grid=document.getElementById('catGrid');
-  if(!grid) return;
-
-  const cats=bookCats(
-    S.currentBookId,
-    _txnType
-  );
-
-  grid.innerHTML=cats.map(c=>`
-    <div class="cat-chip
-      ${_selCat===c?'selected':''}"
-      onclick="selCat('${c}')">
-
-      ${catEmoji(c)} ${c}
-    </div>
-  `).join('');
+  const grid=$('catGrid');if(!grid)return;
+  const cats=[...bookCats(S.currentBookId,_txnType)];
+  if(_editTxn&&_txnType===_editTxn.type&&_selCat===_editTxn.category&&!cats.includes(_selCat))cats.push(_selCat);
+  grid.innerHTML=cats.map(c=>`<div class="cat-chip ${_selCat===c?'selected':''}" data-c="${esc(c)}" onclick="selCat(this.dataset.c)">${esc(catEmoji(c))} ${esc(c)}</div>`).join('');
 }
 function selCat(c){_selCat=c;renderCatGrid();}
 function setTxnType(t){
-
-  _txnType=t;
-
-  _selCat='';
-
-  document.getElementById('btnI').className=
-    'type-btn'+
-    (t==='income'
-    ?' active-income'
-    :'');
-
-  document.getElementById('btnE').className=
-    'type-btn'+
-    (t==='expense'
-    ?' active-expense'
-    :'');
-
-  renderCatGrid();
+  if(t==='expense'&&_editTxn&&_editTxn.createdBy!==U.uid){toast('Only the person who added an entry can make it an expense');return;}
+  _txnType=t;_selCat='';
+  $('btnI').className='type-btn'+(t==='income'?' active-income':'');
+  $('btnE').className='type-btn'+(t==='expense'?' active-expense':'');
+  renderSplitBox();renderCatGrid();
 }
-
 function saveTxn(id){
-  if(guestBlocked()) return;
-  const amt=parseFloat(document.getElementById('fAmt').value);
-  const date=document.getElementById('fDate').value;
-  const remark=document.getElementById('fRemark').value.trim();
+  const b=currentBook();if(!b||!canEdit(b)){toast('You have view-only access to this book');return;}
+  const tx0=id?S.transactions.find(t=>t.id===id):null;if(tx0&&!canEditTxn(tx0,b)){toast('Only the person who added this entry can edit it');return;}
+  const amt=Math.round(parseFloat($('fAmt').value)*100)/100,date=$('fDate').value,remark=$('fRemark').value.trim().slice(0,500);
   if(!amt||amt<=0){toast('Enter a valid amount');return;}
   if(!_selCat){toast('Pick a category');return;}
   if(!date){toast('Pick a date');return;}
-  if(id){
-    const t=S.transactions.find(t=>t.id===id);
-    if(t){Object.assign(t,{amount:amt,type:_txnType,category:_selCat,date,remark});}
-  }else{
-    S.transactions.push({
-      id:uid(),bookId:S.currentBookId,type:_txnType,amount:amt,
-      category:_selCat,date,remark,
-      createdBy:S.user.id,
-      createdByName:S.user.name||S.user.email||'Unknown',
-      createdAt:new Date().toISOString()
-    });
-    const m=monthKey(date);
-    if(m!==S.currentMonth){S.currentMonth=m;}
-  }
-  // For shared books, push immediately to sharedBooks path
-  if(isSharedBook(S.currentBookId)){
-    saveSharedBookData(S.currentBookId);
-  } else {
-    saveUserData();
-  }
-  closeSheetNow();
-  toast(id?'Entry updated ✓':'Entry saved ✓');
+  const base={type:_txnType,amount:amt,category:_selCat.slice(0,80),date,remark};
+  if(splitActive()){
+    const uids=memberList(b).map(m=>m.uid),sp={};
+    for(const u of uids){const v=Math.round((parseFloat(_split.vals[u])||0)*100)/100;if(v<0){toast('Split amounts cannot be negative');return;}sp[u]=v;}
+    const sum=Math.round(uids.reduce((s,u)=>s+sp[u],0)*100);
+    if(sum!==Math.round(amt*100)){toast('Split must add up to '+fmt(amt));return;}
+    base.splits=sp;
+  }else if(id)base.splits=FV.delete();
+  const p=id?txCol(b.id).doc(id).update(Object.assign(base,{updatedAt:nowISO(),updatedBy:U.uid,updatedByName:U.name}))
+            :txCol(b.id).doc().set(Object.assign(base,{createdBy:U.uid,createdByName:U.name,createdAt:nowISO()}));
+  p.catch(dbErr);
+  V.year=date.slice(0,4);if(V.month!=='all')V.month=monthKey(date);
+  closeSheetNow();toast(id?'Entry updated ✓':'Entry saved ✓');
 }
-
 function deleteTxn(id){
-
-  if(guestBlocked()) return;
-
-  if(!confirm('Delete this entry?'))
-    return;
-
-  S.transactions=
-    S.transactions.filter(
-      t=>t.id!==id
-    );
-
-  if(isSharedBook(S.currentBookId)){
-    saveSharedBookData(S.currentBookId);
-  } else {
-    saveUserData();
-  }
-  closeSheetNow();
-
-  toast('Entry deleted');
+  const b=currentBook();if(!b||!canEdit(b))return;
+  const tx=S.transactions.find(t=>t.id===id);if(tx&&!canEditTxn(tx,b)){toast('Only the person who added this entry can delete it');return;}
+  if(!confirm('Delete this entry?'))return;
+  _myDel.add(id);
+  txCol(b.id).doc(id).delete().catch(dbErr);
+  closeSheetNow();toast('Entry deleted');
 }
 
 // ═══════════════════════════════════════════════
-//  EXPORT CSV
+//  EXPORT
 // ═══════════════════════════════════════════════
+function safeFileName(s){return String(s).replace(/[^\w\-. ]+/g,'_').trim()||'book';}
+// shared-book export helpers: who paid, each member's share, totals and who has to pay whom (all entries, all time)
+function exportShared(b,txns){
+  if(!isShared(b))return null;
+  const list=memberList(b),uids=list.map(m=>m.uid),{tot,paid,other,inc}=memberExpense(b,txns);
+  const splitOf=t=>t.type==='expense'?(t.splits||equalShares(t.amount,uids)):null;
+  const pairs=ledger(txns,S.payments).map(o=>({
+    recv:fn(o.c),payer:fn(o.d),fwd:o.fwd,back:o.back,paid:o.pay,pend:o.bal,
+    text:o.bal<=0.004?'Settled':fn(o.d)+' to pay '+fn(o.c)}));
+  const w=walletOf(b,txns,S.payments),bal={};uids.forEach(u=>{bal[u]=w.inc[u]-w.out[u];});
+  return{list,uids,tot,paid,other,inc:w.inc,bal,splitOf,pairs};
+}
 function exportCSV(){
-  const txns=S.transactions.filter(t=>t.bookId===S.currentBookId).sort((a,b)=>a.date.localeCompare(b.date));
-  const rows=[['Date','Type','Category','Amount','Remark'],...txns.map(t=>[t.date,t.type,t.category,t.amount,t.remark||''])];
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='fiberplane_'+currentBook().name+'.csv';a.click();
+  const b=currentBook();if(!b)return;
+  const txns=[...S.transactions].sort((a,c)=>a.date.localeCompare(c.date));
+  const cell=(v,text)=>{let s=String(v);if(text&&/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
+  const X=exportShared(b,txns);
+  const head=['Date','Type','Category','Amount','Remark','Added by'];
+  if(X){head.push('Paid by');X.list.forEach(m=>head.push('Share - '+m.name));}
+  const lines=[head.map(h=>cell(h,true)).join(',')];
+  txns.forEach(t=>{
+    const row=[cell(t.date),cell(t.type),cell(t.category,true),cell(t.amount),cell(t.remark,true),cell(t.createdByName,true)];
+    if(X){const sp=X.splitOf(t);row.push(cell(t.type==='expense'?t.createdByName:'',true));X.list.forEach(m=>row.push(cell(sp?(sp[m.uid]||0):'')));}
+    lines.push(row.join(','));
+  });
+  if(X){
+    lines.push('','"SUMMARY BY MEMBER"');
+    lines.push(['Member','Share of expense','Paid out (entered)','Income (incl. money received)','Balance (income - expense - money sent)'].map(h=>cell(h)).join(','));
+    X.list.forEach(m=>lines.push([cell(m.name,true),cell(r2(X.tot[m.uid])),cell(r2(X.paid[m.uid])),cell(r2(X.inc[m.uid])),cell(r2(X.bal[m.uid]))].join(',')));
+    if(X.other>0.004)lines.push([cell('Former members'),cell(r2(X.other)),cell(''),cell(''),cell('')].join(','));
+    lines.push([cell('Total expense'),cell(r2(X.list.reduce((s,m)=>s+X.tot[m.uid],0)+X.other)),cell(''),cell(''),cell('')].join(','));
+    lines.push('','"PAYMENTS (net between members)"');
+    lines.push(['Paid expense of other','Other member','Paid for other','Other paid for first','Received so far','Pending','Status'].map(h=>cell(h)).join(','));
+    if(!X.pairs.length)lines.push(cell('No payments due'));
+    X.pairs.forEach(o=>lines.push([cell(o.recv,true),cell(o.payer,true),cell(o.fwd),cell(o.back),cell(o.paid),cell(o.pend),cell(o.text,true)].join(',')));
+    const pays=[...S.payments].sort((a,c)=>a.date.localeCompare(c.date));
+    if(pays.length){
+      lines.push('','"PAYMENT HISTORY"',['Date','Paid by','Received by','Amount'].map(h=>cell(h)).join(','));
+      pays.forEach(p=>lines.push([cell(p.date),cell(fn(p.from),true),cell(fn(p.to),true),cell(p.amount)].join(',')));
+    }
+  }
+  const url=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='flyover_'+safeFileName(b.name)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('CSV exported ✓');
 }
 function exportPDF(){
-
-  const txns=S.transactions
-    .filter(t=>t.bookId===S.currentBookId)
-    .sort((a,b)=>a.date.localeCompare(b.date));
-
-  if(!txns.length){
-    toast('No transactions found');
-    return;
+  const b=currentBook();if(!b)return;
+  const txns=[...S.transactions].sort((a,c)=>a.date.localeCompare(c.date));
+  if(!txns.length){toast('No transactions found');return;}
+  if(!window.jspdf){toast('PDF library not loaded — check your connection');return;}
+  const doc=new window.jspdf.jsPDF();
+  if(typeof doc.autoTable!=='function'){toast('PDF library not loaded — check your connection');return;}
+  const inc=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0),exp=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0),bal=inc-exp;
+  const money=n=>'Rs. '+Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
+  const X=exportShared(b,txns);
+  doc.setFontSize(18);doc.text('Flyover Expense Report',14,15);
+  doc.setFontSize(11);doc.text('Book: '+b.name,14,25);doc.text('Generated: '+new Date().toLocaleDateString(),14,32);
+  doc.text('Income: '+money(inc),14,42);doc.text('Expense: '+money(exp),14,49);doc.text('Balance: '+(bal<0?'-':'')+money(Math.abs(bal)),14,56);
+  const head=X?['Date','Type','Category','Amount','Paid by','Split','Remark']:['Date','Type','Category','Amount','Remark'];
+  const body=txns.map(t=>{
+    if(!X)return [t.date,t.type,t.category,money(t.amount),t.remark||'-'];
+    const sp=X.splitOf(t);
+    return [t.date,t.type,t.category,money(t.amount),t.type==='expense'?t.createdByName:'-',sp?X.list.map(m=>fn(m.uid)+' '+money(sp[m.uid]||0)).join(' / '):'-',t.remark||'-'];
+  });
+  doc.autoTable({startY:65,head:[head],body,styles:{fontSize:9}});
+  if(X){
+    let y=doc.lastAutoTable.finalY+10;
+    doc.setFontSize(13);doc.text('Summary by member',14,y);
+    doc.autoTable({startY:y+4,head:[['Member','Share of expense','Paid out (entered)','Income (incl. received)','Balance']],body:X.list.map(m=>[m.name,money(X.tot[m.uid]),money(X.paid[m.uid]),money(X.inc[m.uid]),(X.bal[m.uid]<0?'-':'')+money(Math.abs(X.bal[m.uid]))]).concat([['Total expense',money(exp),'','','']]),styles:{fontSize:9}});
+    y=doc.lastAutoTable.finalY+10;
+    doc.setFontSize(13);doc.text('Payments (net between members)',14,y);
+    doc.autoTable({startY:y+4,head:[['Paid expense of other','Other','Paid for other','Other paid for first','Received','Pending','Status']],
+      body:X.pairs.length?X.pairs.map(o=>[o.recv,o.payer,money(o.fwd),money(o.back),money(o.paid),money(o.pend),o.text]):[['No payments due','','','','','','']],styles:{fontSize:8}});
   }
-
-  const { jsPDF } = window.jspdf;
-  const doc=new jsPDF();
-
-  const book=currentBook();
-
-  const totalIncome=txns
-    .filter(t=>t.type==='income')
-    .reduce((s,t)=>s+t.amount,0);
-
-  const totalExpense=txns
-    .filter(t=>t.type==='expense')
-    .reduce((s,t)=>s+t.amount,0);
-
-  const balance=totalIncome-totalExpense;
-
-  doc.setFontSize(18);
-  doc.text('Fiberplane Expense Report',14,15);
-
-  doc.setFontSize(11);
-  doc.text(`Book: ${book.name}`,14,25);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`,14,32);
-
-  const money = n => {
-  return 'Rs. ' + Number(n).toLocaleString('en-IN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  });
-};
-
-doc.text(`Income: ${money(totalIncome)}`, 14, 42);
-doc.text(`Expense: ${money(totalExpense)}`, 14, 49);
-doc.text(
-  `Balance: ${(balance < 0 ? '-' : '')}${money(Math.abs(balance))}`,
-  14,
-  56
-);
-  const rows=txns.map(t=>[
-    t.date,
-    t.type,
-    t.category,
- 'Rs. ' + Number(t.amount).toLocaleString('en-IN'),
-    t.remark || '-'
-  ]);
-
-  doc.autoTable({
-    startY:65,
-    head:[[
-      'Date',
-      'Type',
-      'Category',
-      'Amount',
-      'Remark'
-    ]],
-    body:rows,
-    styles:{
-      fontSize:9
-    }
-  });
-
-  doc.save(`fiberplane-${book.name}.pdf`);
-
-  toast('PDF exported');
+  doc.save('flyover-'+safeFileName(b.name)+'.pdf');toast('PDF exported');
 }
 
 // ═══════════════════════════════════════════════
-//  SHEET HELPERS
+//  SHEET HELPERS, TOAST, BOOT
 // ═══════════════════════════════════════════════
 function closeSheet(e){if(e.target===e.currentTarget)closeSheetNow();}
-function closeSheetNow(){
-  document.getElementById('sheetBg').classList.remove('open');
-  renderMonthTabs();renderPage();
-}
-
-// ═══════════════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════════════
-// ── OFFLINE DETECTION ───────────────────────────────────────
-function checkOffline(){
-  if(!navigator.onLine){
-    let ov=document.getElementById('offlineOverlay');
-    if(!ov){
-      ov=document.createElement('div');
-      ov.id='offlineOverlay';
-      ov.innerHTML=`<div style="position:fixed;inset:0;background:var(--bg,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:12px;text-align:center;padding:32px">
-        <div style="font-size:72px">✈️</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text,#111)">You're Offline</div>
-        <div style="font-size:14px;color:var(--text2,#666);max-width:260px">Sorry, you are not connected to the internet.<br>Please check your network and try again.</div>
-        <button onclick="if(navigator.onLine){document.getElementById('offlineOverlay').remove();}else{toast('Still offline...');}" style="margin-top:8px;padding:12px 28px;background:#185FA5;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">Try Again</button>
-      </div>`;
-      document.body.appendChild(ov);
-    }
-    return true;
-  } else {
-    const ov=document.getElementById('offlineOverlay');
-    if(ov) ov.remove();
-    return false;
-  }
-}
-window.addEventListener('offline',()=>checkOffline());
-window.addEventListener('online',()=>{checkOffline();toast('Back online ✅');});
-// Check at startup
-document.addEventListener('DOMContentLoaded',()=>checkOffline());
-
+function closeSheetNow(){_paySheet=null;$('sheetBg').classList.remove('open');if(U&&currentBook()){renderMonthTabs();renderPage();}}
 let _toastTimer;
-function toast(msg,dur=2200){
-  const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('show');
-  clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
+function toast(msg,dur=2200){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),dur);}
+
+window.addEventListener('online',()=>{toast('Back online ✅');if(U&&V.page==='profile')renderPage();});
+window.addEventListener('offline',()=>{toast('Offline — changes are saved on this device');if(U&&V.page==='profile')renderPage();});
+
+// ── THEME (light / dark / auto = follow the phone) ──
+function themeMode(){return lsGet('flyover_theme')||'auto';}
+function applyTheme(){
+  const m=themeMode(),sysDark=window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches;
+  const dark=m==='dark'||(m==='auto'&&sysDark);
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  const tc=document.querySelector('meta[name=theme-color]');if(tc)tc.setAttribute('content',dark?'#3D4265':'#185FA5');
+  const ic=$('themeIcon');if(ic)ic.textContent=dark?'🌙':'☀️';
 }
-
-function showSyncIndicator(state){
-  // state: 'syncing' | 'synced' | 'error'
-  let dot=document.getElementById('syncDot');
-  if(!dot){
-    dot=document.createElement('div');
-    dot.id='syncDot';
-    dot.style.cssText='position:fixed;bottom:72px;right:14px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 8px;z-index:999;transition:opacity 0.3s';
-    document.body.appendChild(dot);
-  }
-  if(state==='syncing'){dot.textContent='⏳ Syncing...';dot.style.opacity='1';}
-  else if(state==='synced'){dot.textContent='✅ Synced';dot.style.opacity='1';setTimeout(()=>{dot.style.opacity='0';},2000);}
-  else{dot.textContent='❌ Sync error';dot.style.opacity='1';setTimeout(()=>{dot.style.opacity='0';},3000);}
+function setTheme(m){lsSet('flyover_theme',m);applyTheme();if(U&&currentBook())renderPage();}
+function toggleTheme(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  setTheme(dark?'light':'dark');
 }
-
-// ═══════════════════════════════════════════════
-//  BOOT
-// ═══════════════════════════════════════════════
-// NOTE: We do NOT call loginUser() here from localStorage anymore.
-// The Firebase onAuthStateChanged listener (at the bottom) handles session restore.
-// This avoids loading stale local data before Firebase has a chance to return fresh data.
-// load() is still called to populate S with any cached state for offline fallback.
-load();
-
-
-
-// ===== FIREBASE OVERRIDES =====
-async function saveUserData(){
- if(!S.user) return;
-
- // Always write local cache so offline / pre-Firebase-init works
- const snapshot={
-   books:S.books, currentBookId:S.currentBookId,
-   transactions:S.transactions, categories:S.categories, currentMonth:S.currentMonth
- };
- localStorage.setItem('fp_cache_'+S.user.id, JSON.stringify(snapshot));
-
- if(!window.db) return; // Firebase not ready yet — local cache is enough for now
-
- showSyncIndicator('syncing');
- try{
-   // Save ALL data (personal + shared) to expenseData/{uid} — Firebase is source of truth
-   const data={
-     books:S.books, currentBookId:S.currentBookId,
-     transactions:S.transactions,
-     categories:S.categories, currentMonth:S.currentMonth
-   };
-   await window.dbSet(window.dbRef(window.db,'expenseData/'+S.user.id), data);
-   showSyncIndicator('synced');
- }catch(e){
-   console.log('saveUserData Firebase error:', e);
-   showSyncIndicator('error');
- }
-
- // Also push shared books to sharedBooks/{bookId} for real-time collaboration
- const sharedBookIds=[...new Set(
-   S.books.filter(b=>isSharedBook(b.id)).map(b=>b.id)
- )];
- for(const bid of sharedBookIds){
-   await saveSharedBookData(bid);
- }
+if(window.matchMedia)matchMedia('(prefers-color-scheme:dark)').addEventListener&&matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(themeMode()==='auto'){applyTheme();if(U&&currentBook())renderPage();}});
+// WebViews report 100vh taller than the visible area (hides the bottom nav) → size the app to the real viewport
+function fitViewport(){
+  const h=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--app-h',Math.round(h)+'px');
 }
+fitViewport();applyTheme();
+window.addEventListener('resize',fitViewport);
+window.addEventListener('orientationchange',()=>setTimeout(fitViewport,250));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitViewport);
+// ── OFFLINE + APP-RESUME HANDLING (Android WebView / APK wrappers suspend the page when minimised) ──
+let _hiddenAt=0;
+function updateOffBar(){
+  const el=$('offBar');if(!el)return;
+  const off=!navigator.onLine;
+  el.style.display=off?'block':'none';
+  if(off)el.textContent='📴 Offline — your changes are saved on this device and will sync when you are back online';
+}
+// restart the Firestore connection (a connection left over from before the app was suspended can stay stuck)
+function reconnectDb(){if(!db||!navigator.onLine)return;db.disableNetwork().then(()=>db.enableNetwork()).catch(()=>{});}
+function onResume(){
+  const away=_hiddenAt?Date.now()-_hiddenAt:0;_hiddenAt=0;
+  fitViewport();updateOffBar();
+  const sheetOpen=$('sheetBg')&&$('sheetBg').classList.contains('open');
+  if(away>30*60*1000&&navigator.onLine&&!sheetOpen&&U){location.reload();return;}   // away a long time: start fresh instead of resuming a stale page
+  if(away>10*1000)reconnectDb();
+  if(U&&currentBook())renderAll();
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)_hiddenAt=Date.now();else onResume();});
+window.addEventListener('pageshow',e=>{if(e.persisted)onResume();});
+window.addEventListener('online',()=>{updateOffBar();reconnectDb();toast('Back online — syncing…');if(U&&currentBook())renderPage();});
+window.addEventListener('offline',()=>{updateOffBar();toast('You are offline — changes will sync later',3000);if(U&&currentBook())renderPage();});
+updateOffBar();
+// lets the app open without internet (needs sw.js next to index.html and an https address)
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+}
+function boot(){
+  document.body.style.overscrollBehavior='none';
+  if(location.protocol==='file:')$('fileWarn').style.display='block';
+  if(!initFirebase()){showScreen('authScreen');authErr('Could not load Firebase. Check your internet connection and reload.');return;}
+  auth.onAuthStateChanged(u=>u?onSignedIn(u):onSignedOut(),e=>{showScreen('authScreen');authErr(authMsg(e));});
+}
+boot();
 
-// Override handleAuth + handleGoogleAuth once Firebase is ready
-(function waitForFirebase(){
-  if(!window.auth || !window.signInWithEmailAndPassword || !window.createUserWithEmailAndPassword){
-    setTimeout(waitForFirebase, 100);
-    return;
-  }
-
-  handleAuth = async function(){
-    const email=document.getElementById('fEmail').value.trim();
-    const pass=document.getElementById('fPassword').value;
-    const name=(document.getElementById('fName')?.value||'').trim();
-    const err=document.getElementById('authErr');
-    err.style.display='none';
-    if(!email||!pass){err.textContent='Please fill in all fields.';err.style.display='block';return;}
-    try{
-      let fbUser;
-      if(authMode==='register'){
-        const cred=await window.createUserWithEmailAndPassword(window.auth,email,pass);
-        fbUser=cred.user;
-        const saveName=name||email.split('@')[0];
-        await window.dbSet(window.dbRef(window.db,'users/'+fbUser.uid),{name:saveName,email});
-        loginUser({id:fbUser.uid,name:saveName,email:fbUser.email,initials:saveName.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()});
-      }else{
-        const cred=await window.signInWithEmailAndPassword(window.auth,email,pass);
-        fbUser=cred.user;
-        let name=fbUser.displayName||'User';
-        try{
-          const snap=await window.dbGet(window.dbRef(window.db,'users/'+fbUser.uid));
-          if(snap.exists()){const p=snap.val();name=p.name||name;}
-          const ds=await window.dbGet(window.dbRef(window.db,'expenseData/'+fbUser.uid));
-          if(ds.exists()) Object.assign(S, ds.val());
-        }catch(e){}
-        loginUser({id:fbUser.uid,name,email:fbUser.email,initials:name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()});
-      }
-    }catch(e){
-      err.style.display='block';
-      const code=e.code||'';
-      if(code==='auth/user-not-found'||code==='auth/invalid-credential')err.textContent='No account found with this email.';
-      else if(code==='auth/wrong-password')err.textContent='Incorrect password. Please try again.';
-      else if(code==='auth/too-many-requests')err.textContent='Too many attempts. Please wait a moment.';
-      else if(code==='auth/email-already-in-use')err.textContent='Email already registered. Please sign in.';
-      else if(code==='auth/weak-password')err.textContent='Password must be at least 6 characters.';
-      else if(code==='auth/network-request-failed')err.textContent='No internet connection. Check your network.';
-      else if(code==='auth/invalid-email')err.textContent='Invalid email address.';
-      else err.textContent=e.message||'Login failed. Please try again.';
-    }
-  };
-
-  handleGoogleAuth = async function(){
-    try{
-      const result=await window.signInWithPopup(window.auth, new window.GoogleAuthProvider());
-      const u=result.user;
-      const name=u.displayName||'User';
-      await window.dbSet(window.dbRef(window.db,'users/'+u.uid),{name,email:u.email});
-      loginUser({id:u.uid,name,email:u.email,initials:name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()});
-    }catch(e){
-      const code=e.code||'';
-      if(code!=='auth/popup-closed-by-user') toast(e.message||'Google sign-in failed.');
-    }
-  };
-})();
-window.addEventListener('load',()=>{
- document.body.style.overscrollBehavior='none';
- document.documentElement.style.overscrollBehavior='none';
-});
-// Register Firebase auth listener immediately to avoid race condition
-// where onAuthStateChanged fires before load event
-(function registerAuthListener(){
- if(!window.onAuthStateChangedFirebase || !window.auth){
-   setTimeout(registerAuthListener,100);
-   return;
- }
- window.onAuthStateChangedFirebase(window.auth, async(user)=>{
-   if(!user) return;
-   if(_userExplicitlySignedOut){
-     try{await window.signOutFirebase(window.auth);}catch(e){}
-     return;
-   }
-   if(document.getElementById('mainScreen').classList.contains('active')) return;
-   let name=user.displayName||'User';
-   try{
-     const snap=await window.dbGet(window.dbRef(window.db,'users/'+user.uid));
-     if(snap.exists()){ const p=snap.val(); name=p.name||name; }
-     const ds=await window.dbGet(window.dbRef(window.db,'expenseData/'+user.uid));
-     if(ds.exists()) Object.assign(S, ds.val());
-   }catch(e){}
-   loginUser({id:user.uid,name,email:user.email,initials:name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()});
- });
-})();
+</script>
+</body>
+</html>
